@@ -1,0 +1,191 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 215 50% 23%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 50% 23%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 50% 23%;
+
+    --primary: 207 68% 43%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 207 60% 95%;
+    --secondary-foreground: 207 68% 43%;
+
+    --accent: 130 100% 50%;
+    --accent-foreground: 215 50% 15%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 207 68% 43%;
+
+    --radius: 0.75rem;
+
+    /* Custom brand colors */
+    --brand-blue: 207 68% 43%;
+    --brand-blue-dark: 215 58% 27%;
+    --brand-blue-light: 207 80% 70%;
+    --brand-green: 130 100% 50%;
+    --brand-green-muted: 130 70% 60%;
+    
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(207 68% 43%) 0%, hsl(215 58% 27%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(130 100% 50%) 0%, hsl(130 80% 45%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(207 60% 97%) 100%);
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 8px -2px hsl(207 68% 43% / 0.1);
+    --shadow-md: 0 8px 24px -8px hsl(207 68% 43% / 0.15);
+    --shadow-lg: 0 16px 48px -12px hsl(207 68% 43% / 0.2);
+    --shadow-glow: 0 0 40px hsl(130 100% 50% / 0.3);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 215 50% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 215 45% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 215 45% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 207 68% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 40% 18%;
+    --secondary-foreground: 210 40% 98%;
+
+    --accent: 130 100% 50%;
+    --accent-foreground: 215 50% 10%;
+
+    --muted: 215 35% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 215 35% 20%;
+    --input: 215 35% 20%;
+    --ring: 207 68% 50%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-brand-blue-dark;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+
+  .link-underline {
+    @apply relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-accent after:scale-x-0 after:origin-right after:transition-transform hover:after:scale-x-100 hover:after:origin-left;
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-fade-up {
+    animation: fadeUp 0.6s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.4s ease-out forwards;
+  }
+
+  /* Custom shape clips */
+  .clip-triangle {
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  }
+
+  .clip-hexagon {
+    clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  }
+
+  .clip-diamond {
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
