@@ -114,7 +114,7 @@ export function ServicesOverview() {
           className="w-full h-full object-cover"
         />
       </motion.div>
-      <div className="w-full px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -137,78 +137,65 @@ export function ServicesOverview() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto"
         >
-          {services.map((service) => {
-            const WhatsAppLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-              `Hi Designhub! I'm interested in your service: ${service.title}`
-            )}`;
-
-            return (
-              <motion.div
-                key={service.id}
-                variants={itemVariants}
-                whileHover={{ y: -12, transition: { duration: 0.3 } }}
-                className="group relative overflow-hidden rounded-2xl bg-card border border-border hover:shadow-2xl transition-all duration-300 flex flex-col h-full"
-              >
-                {/* Background Image */}
-                <div className="absolute inset-0 z-0">
-                  <img 
-                    src={service.image} 
-                    alt={service.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = "https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=800&auto=format&fit=crop";
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+          {services.map((service) => (
+            <motion.div
+              key={service.id}
+              variants={itemVariants}
+              whileHover={{ y: -12, transition: { duration: 0.3 } }}
+              className="group relative overflow-hidden rounded-2xl bg-card border border-border hover:shadow-2xl transition-all duration-300 flex flex-col h-full"
+            >
+              {/* Service Image */}
+              <div className="relative h-48 overflow-hidden">
+                <img 
+                  src={service.image} 
+                  alt={service.title}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=800&auto=format&fit=crop";
+                  }}
+                />
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                  <h3 className="text-xl font-bold text-white">{service.title}</h3>
+                  <p className="text-green-400 font-semibold">{service.price}</p>
                 </div>
+              </div>
 
-                {/* Content */}
-                <div className="relative z-10 p-8 flex flex-col h-full">
-                  {/* Icon */}
-                  <motion.div
-                    whileHover={{ scale: 1.15, rotate: 8 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    className="w-16 h-16 rounded-2xl bg-white/90 backdrop-blur-sm flex items-center justify-center mb-6 shadow-lg"
+              {/* Content */}
+              <div className="p-6 flex-1 flex flex-col">
+                <div className="flex-1">
+                  <div className="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-xl mb-4">
+                    <service.icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <p className="text-muted-foreground mb-6">{service.description}</p>
+                </div>
+                
+                <motion.div
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="mt-auto"
+                >
+                  <Button
+                    asChild
+                    size="lg"
+                    className="w-full bg-green-500 hover:bg-green-600 text-white shadow-lg transition-all"
                   >
-                    <service.icon size={32} className="text-blue-600" />
-                  </motion.div>
-
-                  {/* Title & Description */}
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-white mb-3">{service.title}</h3>
-                    <p className="text-white/90 mb-4 leading-relaxed">{service.description}</p>
-                  </div>
-
-                  {/* Price + CTA */}
-                  <div className="flex items-center justify-between mt-6">
-                    <motion.span 
-                      whileHover={{ scale: 1.05 }}
-                      className="text-sm font-bold text-blue-300 bg-blue-600/20 backdrop-blur-sm px-4 py-2 rounded-xl border border-blue-400/30"
+                    <a 
+                      href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Hi Designhub! I\'m interested in your service: ' + service.title)}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2"
                     >
-                      {service.price}
-                    </motion.span>
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Button
-                        asChild
-                        size="sm"
-                        className="bg-green-500 hover:bg-green-600 text-white shadow-lg"
-                      >
-                        <a href={WhatsAppLink} target="_blank" rel="noopener noreferrer">
-                          Learn More
-                        </a>
-                      </Button>
-                    </motion.div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+                      Get Started
+                      <ArrowRight size={18} />
+                    </a>
+                  </Button>
+                </motion.div>
+              </div>
+            </motion.div>
+          ))}
         </motion.div>
 
         {/* View all services button */}
@@ -220,7 +207,7 @@ export function ServicesOverview() {
           className="text-center mt-12"
         >
           <Button size="lg" asChild>
-            <Link to="/services">
+            <Link to="/services" className="flex items-center gap-2">
               View All Services
               <ArrowRight size={18} />
             </Link>

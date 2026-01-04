@@ -3,14 +3,23 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, useNavigationType } from "react-router-dom";
-import { AnimatePresence, motion } from 'framer-motion';
+import { BrowserRouter, Routes, Route, useLocation, useNavigationType, Navigate } from "react-router-dom";
+import { AnimatePresence, motion, easeInOut } from 'framer-motion';
 import { PageLoader } from '@/components/ui/loading';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Dashboard from './pages/Dashboard';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import DashboardRoutes from './pages/dashboard/index';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import AuthCallback from './pages/AuthCallback';
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Services from "./pages/Services";
 import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
+import ProjectConsultation from "./pages/ProjectConsultation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,26 +39,26 @@ const AnimatedRoute = ({ children }: { children: React.ReactNode }) => {
   }, [location.pathname]);
 
   const slideVariants = {
-    initial: {
+    initial: (custom: string) => ({
       opacity: 0,
-      x: navigationType === 'POP' ? -50 : 50,
-    },
+      x: custom === 'back' ? -50 : 50,
+    }),
     in: {
       opacity: 1,
       x: 0,
       transition: {
         duration: 0.3,
-        ease: 'easeOut',
+        ease: easeInOut,
       },
     },
-    out: {
+    out: (custom: string) => ({
       opacity: 0,
-      x: navigationType === 'POP' ? 50 : -50,
+      x: custom === 'back' ? 50 : -50,
       transition: {
         duration: 0.2,
-        ease: 'easeIn',
+        ease: easeInOut,
       },
-    },
+    }),
   };
 
   if (isLoading) {
@@ -70,18 +79,39 @@ const AnimatedRoute = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-const AppRoutes = () => (
-  <AnimatePresence mode="wait">
-    <Routes location={location} key={location.pathname.split('/')[1]}>
-      <Route path="/" element={<AnimatedRoute><Index /></AnimatedRoute>} />
-      <Route path="/about" element={<AnimatedRoute><About /></AnimatedRoute>} />
-      <Route path="/services" element={<AnimatedRoute><Services /></AnimatedRoute>} />
-      <Route path="/faq" element={<AnimatedRoute><FAQ /></AnimatedRoute>} />
-      <Route path="/contact" element={<AnimatedRoute><Contact /></AnimatedRoute>} />
-      <Route path="*" element={<AnimatedRoute><NotFound /></AnimatedRoute>} />
+const AppRoutes = () => {
+  const { user } = useAuth();
+
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/services" element={<Services />} />
+      <Route path="/faq" element={<FAQ />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/project-consultation" element={<ProjectConsultation />} />
+      
+      {/* Auth routes */}
+      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+      <Route path="/signup" element={user ? <Navigate to="/dashboard" replace /> : <Signup />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      
+      {/* Protected routes */}
+      <Route
+        path="/dashboard/*"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <DashboardRoutes />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route path="*" element={<NotFound />} />
     </Routes>
-  </AnimatePresence>
-);
+  );
+};
 
 const App = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -96,16 +126,33 @@ const App = () => {
   }, []);
 
   if (isInitialLoad) {
-    return <PageLoader message="Welcome to DesignHub" />;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Welcome to DesignHub</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true
+          }}>
+          <AuthProvider>
+            <AnimatePresence mode="wait">
+              <AnimatedRoute>
+                <AppRoutes />
+              </AnimatedRoute>
+            </AnimatePresence>
+            <Toaster />
+            <Sonner />
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
