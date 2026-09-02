@@ -227,6 +227,7 @@ export default function Login() {
               </div>
             </CardFooter>
           </form>
+        </Card>
       </div>
     </div>
   );
