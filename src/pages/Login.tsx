@@ -227,19 +227,6 @@ export default function Login() {
               </div>
             </CardFooter>
           </form>
-        </Card>
-
-        {/* Quick Access */}
-        <div className="text-center">
-          <p className="text-sm text-gray-500 mb-2">Quick Access</p>
-          <div className="bg-white rounded-lg p-4 shadow-sm border">
-            <p className="text-xs text-gray-600 mb-2">Admin Credentials (for testing)</p>
-            <div className="text-xs bg-gray-100 rounded p-2 font-mono">
-              <div>Email: designhubzm@gmail.com</div>
-              <div>Password: admin123456</div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

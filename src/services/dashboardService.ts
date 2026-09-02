@@ -103,6 +103,15 @@ export interface Lead {
   last_contact: string;
   notes?: string;
   next_action: string;
+  // Product catalog & solution vertical fields
+  productId?: string;
+  productName?: string;
+  categoryId?: string;
+  categoryTitle?: string;
+  priceAnchor?: string;
+  selectedAddons?: string[];
+  user_id?: string;
+  client_id?: string;
   // Project consultation fields
   services?: {
     webDesign?: boolean;
@@ -789,3 +798,97 @@ export const deleteRecord = async (table: string, id: string) => {
     throw error;
   }
 };
+
+export const createProductInquiryLead = async (inquiryData: {
+  name: string;
+  email: string;
+  phone: string;
+  company?: string;
+  productId?: string;
+  productName?: string;
+  categoryId?: string;
+  categoryTitle?: string;
+  priceAnchor?: string;
+  selectedAddons?: string[];
+  services?: any;
+  projectDetails?: any;
+  timeline?: any;
+  additionalNotes?: string;
+  user_id?: string;
+}) => {
+  try {
+    const leadRecord = {
+      name: inquiryData.name,
+      email: inquiryData.email,
+      phone: inquiryData.phone,
+      company: inquiryData.company || '',
+      productId: inquiryData.productId || '',
+      productName: inquiryData.productName || '',
+      categoryId: inquiryData.categoryId || '',
+      categoryTitle: inquiryData.categoryTitle || '',
+      priceAnchor: inquiryData.priceAnchor || '',
+      selectedAddons: inquiryData.selectedAddons || [],
+      services: inquiryData.services || {},
+      projectDetails: inquiryData.projectDetails || {},
+      timeline: inquiryData.timeline || {},
+      additionalNotes: inquiryData.additionalNotes || '',
+      status: 'new',
+      assigned_to: 'unassigned',
+      user_id: inquiryData.user_id || null,
+      created_at: new Date().toISOString(),
+      last_contact: new Date().toISOString(),
+      next_action: 'Initial contact & lead qualification',
+    };
+
+    const createdLead = await createRecord('leads', leadRecord);
+
+    if (inquiryData.user_id) {
+      try {
+        await createRecord('service_requests', {
+          user_id: inquiryData.user_id,
+          service_type: inquiryData.categoryTitle || inquiryData.productName || 'General Inquiry',
+          description: `Product: ${inquiryData.productName || 'Custom Request'}\nCategory: ${inquiryData.categoryTitle || 'General'}\nBudget/Price: ${inquiryData.priceAnchor || 'N/A'}\nDetails: ${inquiryData.additionalNotes || 'N/A'}`,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      } catch (srvErr) {
+        console.warn('Primary table inserted, secondary service_requests write deferred:', srvErr);
+      }
+    }
+
+    return createdLead;
+  } catch (error) {
+    console.error('Error creating product inquiry lead:', error);
+    throw error;
+  }
+};
+
+export const convertLeadToProject = async (leadId: string, projectName?: string, budget?: number) => {
+  try {
+    const updatedLead = await updateRecord('leads', leadId, {
+      status: 'closed-won',
+      last_contact: new Date().toISOString(),
+      next_action: 'Project kick-off & onboarding'
+    });
+
+    try {
+      await createRecord('projects', {
+        name: projectName || updatedLead.productName || `Project for ${updatedLead.name}`,
+        description: `Product: ${updatedLead.productName || 'Custom Service'}\nClient: ${updatedLead.name} (${updatedLead.email})`,
+        status: 'in_progress',
+        budget: budget || (updatedLead.value ? updatedLead.value : 0),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    } catch (pErr) {
+      console.warn('Lead updated to closed-won, project record deferred:', pErr);
+    }
+
+    return updatedLead;
+  } catch (error) {
+    console.error('Error converting lead to project:', error);
+    throw error;
+  }
+};
+

@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { User } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { PRODUCTS } from '@/data/products';
+import { createProductInquiryLead } from '@/services/dashboardService';
 
 export default function Signup() {
   const [formData, setFormData] = useState({
@@ -60,15 +62,41 @@ export default function Signup() {
     try {
       setLoading(true);
       
+      const searchParams = new URLSearchParams(window.location.search);
+      const productId = searchParams.get('product') || '';
+      const categoryId = searchParams.get('category') || '';
+      const selectedProdObj = productId ? PRODUCTS.find(p => p.id === productId) : null;
+
       // Prepare user metadata with client role (default)
       const userMetadata: any = {
         full_name: formData.fullName,
-        role: 'client' // Always default to client for public signup
+        role: 'client', // Always default to client for public signup
+        intended_product: selectedProdObj?.name || productId || '',
+        intended_category: categoryId || selectedProdObj?.categoryId || ''
       };
 
-      await signUp(formData.email, formData.password, userMetadata);
+      const authData = await signUp(formData.email, formData.password, userMetadata);
       
-      toast.success("Account created successfully! Please check your email to verify your account.");
+      if (selectedProdObj || productId || categoryId) {
+        try {
+          await createProductInquiryLead({
+            name: formData.fullName,
+            email: formData.email,
+            phone: formData.phoneNumber || '',
+            productId: selectedProdObj?.id || productId,
+            productName: selectedProdObj?.name || 'Selected Solution',
+            categoryId: selectedProdObj?.categoryId || categoryId,
+            categoryTitle: selectedProdObj?.categoryName || 'General Category',
+            priceAnchor: selectedProdObj?.price || 'N/A',
+            additionalNotes: `Auto-generated inquiry during client signup.`,
+            user_id: authData?.user?.id
+          });
+        } catch (inqErr) {
+          console.warn("Inquiry creation deferred during signup:", inqErr);
+        }
+      }
+
+      toast.success("Client account created successfully! Please check your email to verify your account.");
       navigate('/login');
     } catch (error: any) {
       toast.error(error.message || "Failed to create an account");

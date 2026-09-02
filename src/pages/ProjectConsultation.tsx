@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Phone, Mail, MapPin, Clock, MessageCircle, LogIn, Upload, ChevronRight, CheckCircle } from "lucide-react";
-import { createRecord } from "@/services/dashboardService";
+import { Phone, Mail, MapPin, Clock, MessageCircle, LogIn, Upload, ChevronRight, CheckCircle, Sparkles } from "lucide-react";
+import { createRecord, createProductInquiryLead } from "@/services/dashboardService";
+import { useAuth } from "@/contexts/AuthContext";
+import { PRODUCTS, PRODUCT_CATEGORIES, Product } from "@/data/products";
 
 interface FormData {
   // Contact Info
@@ -116,12 +118,17 @@ interface FormData {
 }
 
 const ProjectConsultation = () => {
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<string>(searchParams.get("product") || "");
+  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get("category") || "");
+
   const [formData, setFormData] = useState<FormData>({
     // Contact Info
-    fullName: "",
+    fullName: user?.user_metadata?.full_name || "",
     company: "",
-    email: "",
+    email: user?.email || "",
     phone: "",
     
     // Service Selection
@@ -297,12 +304,19 @@ const ProjectConsultation = () => {
     setIsSubmitting(true);
 
     try {
-      // Create a comprehensive project submission
-      const projectData = {
+      const selectedProdObj = selectedProduct ? PRODUCTS.find(p => p.id === selectedProduct) : null;
+      const selectedCatObj = selectedCategory ? PRODUCT_CATEGORIES.find(c => c.id === selectedCategory) : null;
+
+      await createProductInquiryLead({
         name: formData.fullName,
         email: formData.email,
         phone: formData.phone,
         company: formData.company,
+        productId: selectedProdObj?.id || '',
+        productName: selectedProdObj?.name || '',
+        categoryId: selectedCatObj?.id || selectedProdObj?.categoryId || '',
+        categoryTitle: selectedCatObj?.title || selectedProdObj?.categoryName || 'General Solution',
+        priceAnchor: selectedProdObj?.price || formData.estimatedBudget || 'N/A',
         services: formData.services,
         projectDetails: {
           webDesign: formData.webDesign,
@@ -318,17 +332,14 @@ const ProjectConsultation = () => {
           urgency: formData.urgency,
         },
         additionalNotes: formData.additionalNotes,
-        status: 'new' as const,
-        assigned_to: 'unassigned',
-        created_at: new Date().toISOString(),
-        last_contact: new Date().toISOString()
-      };
-
-      await createRecord('leads', projectData);
+        user_id: user?.id || undefined,
+      });
 
       toast({
-        title: "Project submitted successfully!",
-        description: "Thank you! Our sales team will review your project and get back to you within 24 hours.",
+        title: "Project Inquiry Submitted!",
+        description: user 
+          ? "Your inquiry has been sent to our sales team and added to your Client Portal Dashboard." 
+          : "Thank you! Our sales team will review your project and get back to you within 24 hours.",
       });
 
       // Reset form

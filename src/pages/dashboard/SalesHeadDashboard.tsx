@@ -29,7 +29,8 @@ import {
   getLeads,
   createRecord,
   updateRecord,
-  deleteRecord
+  deleteRecord,
+  convertLeadToProject
 } from '@/services/dashboardService';
 import type { SalesMetrics as SalesMetricsType, SalesRep as SalesRepType, Lead as LeadType } from '@/services/dashboardService';
 
@@ -304,11 +305,45 @@ export default function SalesHeadDashboard() {
                           <Badge className={getLeadStatusColor(lead.status)}>
                             {lead.status.replace('-', ' ')}
                           </Badge>
-                          <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4" />
-                          </Button>
+                          {lead.status !== 'closed-won' && (
+                            <Button
+                              size="sm"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+                              onClick={async () => {
+                                try {
+                                  await convertLeadToProject(lead.id, lead.productName, lead.value);
+                                  toast.success(`Converted lead ${lead.name} to active project!`);
+                                  fetchDashboardData();
+                                } catch (e) {
+                                  toast.error('Failed to convert lead to project');
+                                }
+                              }}
+                            >
+                              Convert to Project
+                            </Button>
+                          )}
                         </div>
                       </div>
+
+                      {/* Product Catalogue & Solution Category */}
+                      {(lead.productName || lead.categoryTitle) && (
+                        <div className="mb-3 p-2.5 bg-primary/5 rounded border border-primary/20 flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-bold text-primary">Inquired Product:</span>
+                          <Badge variant="default" className="text-xs">
+                            {lead.productName || 'Custom Request'}
+                          </Badge>
+                          {lead.categoryTitle && (
+                            <Badge variant="outline" className="text-xs border-primary/40 text-primary">
+                              {lead.categoryTitle}
+                            </Badge>
+                          )}
+                          {lead.priceAnchor && (
+                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 ml-auto">
+                              Anchor: {lead.priceAnchor}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {/* Services Selected */}
                       {lead.services && (
