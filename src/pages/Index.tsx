@@ -2,7 +2,8 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, MessageCircle, Rocket, Palette, Globe, Cpu, Megaphone, TrendingUp, BarChart3, HelpCircle, ShieldCheck, Layers, Award, Sparkles, Building2, Users } from "lucide-react";
+import { ArrowRight, CheckCircle2, MessageCircle, Rocket, Palette, Globe, Cpu, Megaphone, TrendingUp, BarChart3 } from "lucide-react";
+import { Hero } from "@/components/home/Hero";
 import { ProductFinder } from "@/components/home/ProductFinder";
 import { PRODUCT_CATEGORIES, PRODUCTS, PACKAGE_BUNDLES } from "@/data/products";
 
@@ -22,75 +23,7 @@ export default function Index() {
   return (
     <Layout>
       {/* 1. HERO SECTION */}
-      <section className="relative py-24 sm:py-32 bg-gradient-to-b from-primary/5 via-background to-background overflow-hidden border-b border-border">
-        {/* Subtle background glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="section-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="max-w-4xl mx-auto text-center space-y-6"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs sm:text-sm font-extrabold uppercase tracking-wider shadow-sm">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span>Business, Digital & Growth Solutions</span>
-            </div>
-
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-foreground tracking-tight leading-[1.1]">
-              Build Better. <br className="hidden sm:inline" />
-              <span className="text-primary bg-gradient-to-r from-primary via-emerald-500 to-teal-600 bg-clip-text text-transparent">
-                Grow Smarter.
-              </span>
-            </h1>
-
-            <p className="text-lg sm:text-2xl text-muted-foreground leading-relaxed max-w-3xl mx-auto font-normal">
-              We help businesses build, market, sell and operate better — from professional branding and websites to custom software, marketing, sales teams, and business growth solutions.
-            </p>
-
-            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button
-                size="lg"
-                asChild
-                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold shadow-lg rounded-xl text-base px-8 py-6"
-              >
-                <Link to="/solutions" className="flex items-center gap-2">
-                  <span>Explore Solutions</span>
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-              </Button>
-
-              <Button
-                size="lg"
-                variant="outline"
-                asChild
-                className="w-full sm:w-auto font-bold rounded-xl text-base px-8 py-6 border-2"
-              >
-                <Link to="/project-consultation">
-                  Book a Consultation
-                </Link>
-              </Button>
-            </div>
-
-            {/* Micro proof badges */}
-            <div className="pt-8 flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-muted-foreground border-t border-border/50 max-w-2xl mx-auto">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>50+ Businesses Served</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>100+ Projects Delivered</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>Zambia-Based Execution</span>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      <Hero />
 
       {/* 2. INTERACTIVE PRODUCT FINDER */}
       <ProductFinder />
