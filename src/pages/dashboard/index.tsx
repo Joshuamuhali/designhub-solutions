@@ -15,6 +15,10 @@ import FinanceDashboard from './FinanceDashboard';
 import MarketingDashboard from './MarketingDashboard';
 import SupportDashboard from './SupportDashboard';
 
+import OfferingsManagement from './OfferingsManagement';
+import ProjectWorkspace from './ProjectWorkspace';
+import FinanceManagement from './FinanceManagement';
+
 export default function DashboardRoutes() {
   return (
     <Routes>
@@ -25,6 +29,10 @@ export default function DashboardRoutes() {
       <Route path="billing" element={<Billing />} />
       <Route path="messages" element={<Messages />} />
       <Route path="analytics" element={<Analytics />} />
+      <Route path="offerings" element={<OfferingsManagement />} />
+      <Route path="projects" element={<ProjectWorkspace />} />
+      <Route path="projects/:projectId" element={<ProjectWorkspace />} />
+      <Route path="finance-management" element={<FinanceManagement />} />
       
       {/* Role-based dashboards */}
       <Route path="superadmin" element={<SuperAdminDashboard />} />

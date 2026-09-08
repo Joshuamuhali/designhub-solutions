@@ -235,10 +235,21 @@ export default function Solutions() {
                     variant="outline"
                     size="sm"
                     asChild
-                    className="w-full text-xs"
+                    className="w-full text-xs border-primary/30 text-primary hover:bg-primary/5 font-semibold gap-1.5"
+                  >
+                    <Link to={`/services/${prod.id}`}>
+                      View Service Landing Page <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    asChild
+                    className="w-full text-xs text-muted-foreground"
                   >
                     <Link to={`/project-consultation?product=${prod.id}`}>
-                      Book Consultation for Product
+                      Book Full Consultation
                     </Link>
                   </Button>
                 </div>

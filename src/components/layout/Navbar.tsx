@@ -18,6 +18,7 @@ import logo from "@/assets/designhub-logo.png";
 const publicNavLinks = [
   { name: "Home", path: "/" },
   { name: "Solutions", path: "/solutions", hasDropdown: true },
+  { name: "Products", path: "/products" },
   { name: "Industries", path: "/industries" },
   { name: "Work", path: "/work" },
   { name: "About", path: "/about" },

@@ -31,7 +31,8 @@ export const ROLE_HIERARCHY: Record<string, RoleDefinition> = {
       'manage_finance',
       'manage_marketing',
       'manage_support',
-      'manage_clients'
+      'manage_clients',
+      'manage_offerings'
     ]
   },
   admin: {

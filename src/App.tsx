@@ -22,7 +22,8 @@ import Insights from "./pages/Insights";
 import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
 import ProjectConsultation from "./pages/ProjectConsultation";
-import NotFound from "./pages/NotFound";
+import PublicOfferingLanding from "./pages/PublicOfferingLanding";
+import ProductsCatalog from "./pages/ProductsCatalog";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,9 @@ const AppRoutes = () => {
       <Route path="/" element={<Index />} />
       <Route path="/solutions" element={<Solutions />} />
       <Route path="/services" element={<Navigate to="/solutions" replace />} />
+      <Route path="/services/:slug" element={<PublicOfferingLanding type="service" />} />
+      <Route path="/products" element={<ProductsCatalog />} />
+      <Route path="/products/:slug" element={<PublicOfferingLanding type="product" />} />
       <Route path="/work" element={<Work />} />
       <Route path="/industries" element={<Industries />} />
       <Route path="/insights" element={<Insights />} />

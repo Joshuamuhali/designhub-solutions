@@ -16,7 +16,10 @@ import {
   Menu,
   X,
   Bell,
-  Search
+  Search,
+  Layers,
+  Briefcase,
+  CreditCard
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -33,6 +36,24 @@ const sidebarItems: SidebarItem[] = [
     label: 'Overview',
     icon: <Home className="w-4 h-4" />,
     href: '/dashboard'
+  },
+  {
+    id: 'erp-projects',
+    label: 'ERP Project Workspace',
+    icon: <Briefcase className="w-4 h-4" />,
+    href: '/dashboard/projects'
+  },
+  {
+    id: 'offerings',
+    label: 'Services & Products',
+    icon: <Layers className="w-4 h-4" />,
+    href: '/dashboard/offerings'
+  },
+  {
+    id: 'erp-finance',
+    label: 'Accounts & Invoicing',
+    icon: <CreditCard className="w-4 h-4" />,
+    href: '/dashboard/finance-management'
   },
   {
     id: 'service-requests',
