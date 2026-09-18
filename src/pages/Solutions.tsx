@@ -316,17 +316,6 @@ export default function Solutions() {
                   >
                     Send Inquiry to Our Team
                   </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    asChild
-                    className="w-full text-xs text-muted-foreground"
-                  >
-                    <Link to={`/project-consultation?product=${prod.id}`}>
-                      Book a Schedule
-                    </Link>
-                  </Button>
                 </div>
               </motion.div>
             ))}
