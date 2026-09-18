@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -25,15 +25,62 @@ export default function Solutions() {
   const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
   const [inquiryProduct, setInquiryProduct] = useState<Product | null>(null);
   const [inquiryForm, setInquiryForm] = useState({ name: '', email: '', phone: '', company: '', message: '' });
+  const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [inquirySubmitted, setInquirySubmitted] = useState(false);
   const [inquiryError, setInquiryError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isBundle, setIsBundle] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (activeCategoryParam) {
       setSelectedCategory(activeCategoryParam);
     }
   }, [activeCategoryParam]);
+
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isInquiryModalOpen) {
+        handleModalClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isInquiryModalOpen]);
+
+  // Focus trap in modal
+  useEffect(() => {
+    if (isInquiryModalOpen && modalRef.current) {
+      const focusableElements = modalRef.current.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+      firstElement?.focus();
+
+      const handleTab = (e: KeyboardEvent) => {
+        if (e.key === 'Tab') {
+          if (e.shiftKey) {
+            if (document.activeElement === firstElement) {
+              e.preventDefault();
+              lastElement?.focus();
+            }
+          } else {
+            if (document.activeElement === lastElement) {
+              e.preventDefault();
+              firstElement?.focus();
+            }
+          }
+        }
+      };
+
+      document.addEventListener('keydown', handleTab);
+      return () => document.removeEventListener('keydown', handleTab);
+    }
+  }, [isInquiryModalOpen]);
 
   const filteredProducts = selectedCategory === "all"
     ? PRODUCTS
@@ -54,14 +101,16 @@ export default function Solutions() {
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  const handleInquiryClick = (product: Product) => {
+  const handleInquiryClick = (product: Product | any) => {
     setInquiryProduct(product);
+    setIsBundle(product.categoryId === 'bundle' || !product.categoryId);
+    setSelectedAddons([]);
     setInquiryForm({ 
       name: '', 
       email: '', 
       phone: '', 
       company: '', 
-      message: `I'm interested in the ${product.name} (${product.price}). Please provide more information.` 
+      message: '' 
     });
     setIsInquiryModalOpen(true);
   };
@@ -72,20 +121,34 @@ export default function Solutions() {
     setInquiryError(null);
 
     try {
-      // Send inquiry to Supabase
+      // Determine service type
+      let serviceType: 'Standard' | 'Subscription' | 'Bundle' = 'Standard';
+      if (isBundle) {
+        serviceType = 'Bundle';
+      } else if (inquiryProduct?.billingType === 'monthly') {
+        serviceType = 'Subscription';
+      }
+
+      // Get category name
+      const category = PRODUCT_CATEGORIES.find(c => c.id === inquiryProduct?.categoryId);
+      const serviceCategory = category?.name || inquiryProduct?.categoryName || 'General';
+
+      // Send inquiry to Supabase service_inquiries table
       const { data, error } = await supabase
-        .from('inquiries')
+        .from('service_inquiries')
         .insert({
-          name: inquiryForm.name,
-          email: inquiryForm.email,
-          phone: inquiryForm.phone,
-          company: inquiryForm.company,
-          message: inquiryForm.message,
-          product_id: inquiryProduct?.id,
-          product_name: inquiryProduct?.name,
-          product_price: inquiryProduct?.price,
-          status: 'pending',
-          created_at: new Date().toISOString()
+          service_category: serviceCategory,
+          service_type: serviceType,
+          service_title: inquiryProduct?.name || 'Unknown Service',
+          service_price: inquiryProduct?.price || 'Contact for pricing',
+          selected_addons: selectedAddons,
+          client_name: inquiryForm.name,
+          client_phone: inquiryForm.phone,
+          client_email: inquiryForm.email || null,
+          business_name: inquiryForm.company || null,
+          message: inquiryForm.message || null,
+          status: 'new',
+          source_page: window.location.pathname
         })
         .select()
         .single();
@@ -109,9 +172,27 @@ export default function Solutions() {
   const handleCreateAccount = () => {
     setIsInquiryModalOpen(false);
     setInquirySubmitted(false);
+    setInquiryError(null);
+    setSelectedAddons([]);
     setInquiryForm({ name: '', email: '', phone: '', company: '', message: '' });
     // Navigate to signup page
     window.location.href = '/signup';
+  };
+
+  const handleAddonToggle = (addonName: string) => {
+    setSelectedAddons(prev =>
+      prev.includes(addonName)
+        ? prev.filter(a => a !== addonName)
+        : [...prev, addonName]
+    );
+  };
+
+  const handleModalClose = () => {
+    setIsInquiryModalOpen(false);
+    setInquirySubmitted(false);
+    setInquiryError(null);
+    setSelectedAddons([]);
+    setInquiryForm({ name: '', email: '', phone: '', company: '', message: '' });
   };
 
   return (
@@ -409,9 +490,10 @@ export default function Solutions() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setIsInquiryModalOpen(false)}
+            onClick={handleModalClose}
           >
             <motion.div
+              ref={modalRef}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -419,25 +501,30 @@ export default function Solutions() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="text-xl font-bold text-foreground">Send Inquiry</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {inquiryProduct?.name} - {inquiryProduct?.price}
-                    </p>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => {
-                      setIsInquiryModalOpen(false);
-                      setInquirySubmitted(false);
-                      setInquiryError(null);
-                      setInquiryForm({ name: '', email: '', phone: '', company: '', message: '' });
-                    }}
+                    onClick={handleModalClose}
                   >
                     <X className="w-4 h-4" />
                   </Button>
+                </div>
+
+                {/* Service Details */}
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Service</span>
+                    <span className="text-xs font-bold text-primary uppercase">{inquiryProduct?.categoryName || 'Bundle'}</span>
+                  </div>
+                  <div className="text-lg font-bold text-foreground">{inquiryProduct?.name}</div>
+                  <div className="text-xl font-black text-primary">{inquiryProduct?.price}</div>
+                  {inquiryProduct?.headline && (
+                    <p className="text-xs text-muted-foreground italic">"{inquiryProduct.headline}"</p>
+                  )}
                 </div>
 
                 {inquirySubmitted ? (
@@ -448,7 +535,7 @@ export default function Solutions() {
                     <div>
                       <h4 className="text-xl font-bold text-foreground mb-2">Inquiry Submitted!</h4>
                       <p className="text-sm text-muted-foreground mb-6">
-                        Thank you for your inquiry. We'll get back to you shortly.
+                        Thank you for your inquiry. Designhub will follow up on WhatsApp/email within 24 hours.
                       </p>
                     </div>
                     <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-left space-y-3">
@@ -461,11 +548,7 @@ export default function Solutions() {
                     </div>
                     <div className="flex gap-3">
                       <Button
-                        onClick={() => {
-                          setIsInquiryModalOpen(false);
-                          setInquirySubmitted(false);
-                          setInquiryForm({ name: '', email: '', phone: '', company: '', message: '' });
-                        }}
+                        onClick={handleModalClose}
                         variant="outline"
                         className="flex-1"
                       >
@@ -487,6 +570,31 @@ export default function Solutions() {
                         <p className="text-sm text-destructive">{inquiryError}</p>
                       </div>
                     )}
+
+                    {/* Add-ons Section */}
+                    {!isBundle && inquiryProduct?.addons && inquiryProduct.addons.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="text-xs font-bold text-foreground uppercase tracking-wider">
+                          Optional Add-ons
+                        </div>
+                        <div className="space-y-2">
+                          {inquiryProduct.addons.map((addon, index) => (
+                            <label key={index} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent cursor-pointer transition-colors">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedAddons.includes(addon.name)}
+                                  onChange={() => handleAddonToggle(addon.name)}
+                                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                                />
+                                <span className="text-sm text-foreground">{addon.name}</span>
+                              </div>
+                              <span className="text-sm font-semibold text-primary">{addon.price}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div>
                       <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
                         Full Name *
@@ -503,21 +611,7 @@ export default function Solutions() {
 
                     <div>
                       <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
-                        Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={inquiryForm.email}
-                        onChange={(e) => setInquiryForm({ ...inquiryForm, email: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                        placeholder="john@example.com"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
-                        Phone Number *
+                        Phone Number * (for WhatsApp follow-up)
                       </label>
                       <input
                         type="tel"
@@ -531,7 +625,20 @@ export default function Solutions() {
 
                     <div>
                       <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
-                        Company Name
+                        Email Address (optional)
+                      </label>
+                      <input
+                        type="email"
+                        value={inquiryForm.email}
+                        onChange={(e) => setInquiryForm({ ...inquiryForm, email: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="john@example.com"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
+                        Business Name (optional)
                       </label>
                       <input
                         type="text"
@@ -544,10 +651,9 @@ export default function Solutions() {
 
                     <div>
                       <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
-                        Message *
+                        Message / Notes (optional)
                       </label>
                       <textarea
-                        required
                         rows={4}
                         value={inquiryForm.message}
                         onChange={(e) => setInquiryForm({ ...inquiryForm, message: e.target.value })}
@@ -560,10 +666,7 @@ export default function Solutions() {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => {
-                          setIsInquiryModalOpen(false);
-                          setInquiryError(null);
-                        }}
+                        onClick={handleModalClose}
                         className="flex-1"
                       >
                         Cancel
