@@ -24,6 +24,7 @@ import Contact from "./pages/Contact";
 import ProjectConsultation from "./pages/ProjectConsultation";
 import PublicOfferingLanding from "./pages/PublicOfferingLanding";
 import ProductsCatalog from "./pages/ProductsCatalog";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 

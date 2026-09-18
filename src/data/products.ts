@@ -1,7 +1,7 @@
 export interface Product {
   id: string;
   name: string;
-  categoryId: 'start' | 'brand' | 'digital' | 'systems' | 'market' | 'sales' | 'grow';
+  categoryId: 'start' | 'brand' | 'digital' | 'systems' | 'market' | 'sales' | 'grow' | 'finance' | 'hr' | 'research' | 'csr' | 'audit';
   categoryName: string;
   headline: string;
   description: string;
@@ -15,10 +15,12 @@ export interface Product {
   whatsappMessage: string;
   addons?: { name: string; price: string }[];
   relatedProductIds?: string[];
+  requiresAudit?: boolean;
+  isEntryAudit?: boolean;
 }
 
 export interface ProductCategory {
-  id: 'start' | 'brand' | 'digital' | 'systems' | 'market' | 'sales' | 'grow';
+  id: 'start' | 'brand' | 'digital' | 'systems' | 'market' | 'sales' | 'grow' | 'finance' | 'hr' | 'research' | 'csr' | 'audit';
   name: string;
   title: string;
   headline: string;
@@ -94,9 +96,71 @@ export const PRODUCT_CATEGORIES: ProductCategory[] = [
     description: 'Practical business health check-ups, 90-day action plans, operations optimization, and strategic partnerships.',
     iconName: 'BarChart3',
   },
+  {
+    id: 'finance',
+    name: 'FINANCE',
+    title: 'Manage Your Finances',
+    headline: 'Know your numbers. Make better decisions.',
+    description: 'Financial health reviews, budgeting support, and stakeholder reporting for businesses ready to get financially organized.',
+    iconName: 'DollarSign',
+  },
+  {
+    id: 'hr',
+    name: 'HR & TRAINING',
+    title: 'Build Your Team',
+    headline: 'Hire, train, and retain great people.',
+    description: 'Recruitment support, onboarding systems, performance management, and employee development programs.',
+    iconName: 'Users',
+  },
+  {
+    id: 'research',
+    name: 'RESEARCH',
+    title: 'Know Your Market',
+    headline: 'Stop guessing. Start knowing.',
+    description: 'Competitor analysis, customer behavior insights, and market intelligence to inform your strategy.',
+    iconName: 'Search',
+  },
+  {
+    id: 'csr',
+    name: 'CSR',
+    title: 'Community & Impact',
+    headline: 'Build goodwill. Show impact.',
+    description: 'CSR strategy development, community engagement programs, and stakeholder reporting for socially responsible businesses.',
+    iconName: 'Heart',
+  },
+  {
+    id: 'audit',
+    name: 'AUDIT',
+    title: 'Business Audit',
+    headline: 'Diagnose before you prescribe.',
+    description: 'Non-refundable diagnostic fee to assess your business needs and recommend the right solution.',
+    iconName: 'ClipboardCheck',
+  },
 ];
 
 export const PRODUCTS: Product[] = [
+  // AUDIT (Entry Point)
+  {
+    id: 'business-audit',
+    name: 'Business Audit',
+    categoryId: 'audit',
+    categoryName: 'Audit',
+    headline: 'Before we sell you anything, we look at your actual business.',
+    description: 'A real look at your business — your finances, your team, your marketing, your systems — before we recommend anything. Most businesses waste money buying the wrong service because nobody diagnosed the actual problem first. This fixes that. One assessment session, a written diagnostic report, and a specific package recommendation — no guessing which service fits you.',
+    price: 'K1,500',
+    priceRaw: 1500,
+    billingType: 'one-time',
+    isEntryAudit: true,
+    inclusions: [
+      'One assessment session',
+      'Written diagnostic report',
+      'Specific package recommendation',
+      'No guessing which service fits you',
+    ],
+    targetAudience: 'All businesses before purchasing any package.',
+    whatsappMessage: "Hi Designhub! I'd like to book a Business Audit (K1,500).",
+  },
+
   // START
   {
     id: 'business-starter-package',
@@ -108,7 +172,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K3,500',
     priceRaw: 3500,
     billingType: 'one-time',
-    popular: true,
+    requiresAudit: true,
     inclusions: [
       'Company profile design',
       'Basic business plan outline',
@@ -156,6 +220,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K1,500',
     priceRaw: 1500,
     billingType: 'one-time',
+    requiresAudit: true,
     inclusions: [
       '3 custom logo concepts',
       'Logo variations (Light/Dark/Icon)',
@@ -182,6 +247,7 @@ export const PRODUCTS: Product[] = [
     priceRaw: 3000,
     billingType: 'one-time',
     popular: true,
+    requiresAudit: true,
     inclusions: [
       'Full logo design suite',
       'Brand guidelines booklet',
@@ -208,7 +274,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K1,500',
     priceRaw: 1500,
     billingType: 'one-time',
-    popular: true,
+    requiresAudit: true,
     inclusions: [
       'Company introduction & vision/mission',
       'Products & services layout',
@@ -230,6 +296,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K500',
     priceRaw: 500,
     billingType: 'one-time',
+    requiresAudit: true,
     inclusions: [
       'Brochures & product flyers',
       'Business cards & ID badges',
@@ -252,6 +319,7 @@ export const PRODUCTS: Product[] = [
     price: 'K5,000',
     priceRaw: 5000,
     billingType: 'one-time',
+    requiresAudit: true,
     inclusions: [
       'Up to 5 custom pages',
       '100% mobile-responsive layout',
@@ -280,6 +348,7 @@ export const PRODUCTS: Product[] = [
     billingType: 'one-time',
     featured: true,
     popular: true,
+    requiresAudit: true,
     inclusions: [
       'Up to 10 custom pages',
       'Bespoke, brand-aligned visual design',
@@ -309,6 +378,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K15,000',
     priceRaw: 15000,
     billingType: 'one-time',
+    requiresAudit: true,
     inclusions: [
       '15+ pages or full e-commerce catalog',
       'Mobile payment integration (MTN/Airtel/Cards)',
@@ -335,7 +405,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K10,000',
     priceRaw: 10000,
     billingType: 'one-time',
-    popular: true,
+    requiresAudit: true,
     inclusions: [
       'Centralized client database',
       'Lead capture & status tracking',
@@ -358,6 +428,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K10,000',
     priceRaw: 10000,
     billingType: 'one-time',
+    requiresAudit: true,
     inclusions: [
       'Pipeline stage visualization',
       'Sales representative target tracking',
@@ -379,6 +450,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K10,000',
     priceRaw: 10000,
     billingType: 'one-time',
+    requiresAudit: true,
     inclusions: [
       'Product & stock quantity tracking',
       'Low-stock threshold alerts',
@@ -399,6 +471,7 @@ export const PRODUCTS: Product[] = [
     description: 'Tailor-made software applications built to solve your specific operational bottlenecks.',
     price: 'Custom Quote',
     billingType: 'custom',
+    requiresAudit: true,
     inclusions: [
       'Custom workflow analysis & spec scoping',
       'User interface (UI) & experience design',
@@ -423,6 +496,7 @@ export const PRODUCTS: Product[] = [
     price: 'K850/month',
     priceRaw: 850,
     billingType: 'monthly',
+    requiresAudit: true,
     inclusions: [
       '8 branded graphics/posts per month',
       'Monthly content calendar planning',
@@ -444,7 +518,7 @@ export const PRODUCTS: Product[] = [
     price: 'K1,500/month',
     priceRaw: 1500,
     billingType: 'monthly',
-    popular: true,
+    requiresAudit: true,
     inclusions: [
       '12–15 high-quality graphics/posts',
       '2 short promotional videos / reels',
@@ -467,6 +541,7 @@ export const PRODUCTS: Product[] = [
     price: 'K2,500+/month',
     priceRaw: 2500,
     billingType: 'monthly',
+    requiresAudit: true,
     inclusions: [
       '20+ custom posts per month',
       '5 short promotional videos / skits',
@@ -491,6 +566,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K2,500',
     priceRaw: 2500,
     billingType: 'one-time',
+    requiresAudit: true,
     inclusions: [
       'Sales process review',
       'Sales team capability assessment',
@@ -512,7 +588,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K5,000',
     priceRaw: 5000,
     billingType: 'one-time',
-    popular: true,
+    requiresAudit: true,
     inclusions: [
       'Sales structure & role definitions',
       'Target & KPI setup framework',
@@ -534,6 +610,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K3,500/month',
     priceRaw: 3500,
     billingType: 'monthly',
+    requiresAudit: true,
     inclusions: [
       'Weekly sales pipeline review meetings',
       'Sales target & KPI monitoring',
@@ -555,6 +632,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K6,000/month',
     priceRaw: 6000,
     billingType: 'monthly',
+    requiresAudit: true,
     inclusions: [
       'Target market prospecting & research',
       'Outbound calling & outreach',
@@ -573,12 +651,13 @@ export const PRODUCTS: Product[] = [
     name: 'Business Check-Up',
     categoryId: 'grow',
     categoryName: 'Grow',
-    headline: 'What\'s holding your business back? Let\'s find out.',
-    description: 'A comprehensive diagnostic review of your sales, marketing, operations, systems, and people.',
+    headline: 'Deep diagnostic into what\'s actually broken in your business.',
+    description: 'A comprehensive diagnostic review of your sales, marketing, operations, systems, and people. This is a deeper paid diagnostic after the entry audit — for businesses that need a full health assessment with a prioritized action plan.',
     price: 'K2,500',
     priceRaw: 2500,
     billingType: 'one-time',
     popular: true,
+    requiresAudit: true,
     inclusions: [
       'Full business health assessment',
       'Sales & marketing channel audit',
@@ -600,6 +679,7 @@ export const PRODUCTS: Product[] = [
     price: 'From K5,000',
     priceRaw: 5000,
     billingType: 'one-time',
+    requiresAudit: true,
     inclusions: [
       'Clear business objective setting',
       'Market & target customer analysis',
@@ -620,6 +700,7 @@ export const PRODUCTS: Product[] = [
     description: 'Ongoing strategic, operational, and implementation leadership for growing companies.',
     price: 'Custom Retainer',
     billingType: 'custom',
+    requiresAudit: true,
     inclusions: [
       'Executive advisory & monthly strategy sessions',
       'Cross-departmental execution management (Sales/Marketing/Systems)',
@@ -630,6 +711,182 @@ export const PRODUCTS: Product[] = [
     targetAudience: 'Established businesses needing fractional leadership and end-to-end execution.',
     whatsappMessage: "Hi Designhub! I'd like to discuss a Business Management Partnership.",
     relatedProductIds: ['business-checkup', 'business-growth-plan'],
+  },
+
+  // FINANCE
+  {
+    id: 'cashflow-clarity-check',
+    name: 'Cashflow Clarity Check',
+    categoryId: 'finance',
+    categoryName: 'Finance',
+    headline: 'Stop guessing if your business is actually profitable.',
+    description: 'If you\'ve never separated business money from personal money, you don\'t actually know if your business is profitable. This one-time review tells you exactly where your money goes and gives you a simple budget template to stay on track. Financial health review, business vs. personal finance separation, simple budget template, and one written report.',
+    price: 'K2,000',
+    priceRaw: 2000,
+    billingType: 'one-time',
+    requiresAudit: true,
+    inclusions: [
+      'Financial health review session',
+      'Business vs. personal finance separation',
+      'Simple budget template',
+      'Owner financial report',
+    ],
+    targetAudience: 'Sole traders and small shops who have never separated business from personal finances.',
+    whatsappMessage: "Hi Designhub! I'm interested in the Cashflow Clarity Check (K2,000).",
+    relatedProductIds: ['finance-partner-retainer', 'business-checkup'],
+  },
+  {
+    id: 'finance-partner-retainer',
+    name: 'Finance Partner Retainer',
+    categoryId: 'finance',
+    categoryName: 'Finance',
+    headline: 'Get numbers that look credible to investors every month.',
+    description: 'If you\'re trying to raise money or report to investors/a board, you need numbers that look credible every month — not once a year. This is like having a part-time finance officer handling budgeting, reports, and staff training. Monthly budgeting support, investor-ready reports, a quarterly review, and financial literacy sessions for your staff.',
+    price: 'K3,500/month',
+    priceRaw: 3500,
+    billingType: 'monthly',
+    requiresAudit: true,
+    inclusions: [
+      'Monthly budgeting support',
+      'Investor/stakeholder-ready reports',
+      'Financial literacy sessions for staff',
+      'Quarterly financial review',
+    ],
+    targetAudience: 'SMEs raising capital or reporting to a board or investors.',
+    whatsappMessage: "Hi Designhub! I'm interested in the Finance Partner Retainer (K3,500/mo).",
+    relatedProductIds: ['cashflow-clarity-check', 'business-management-partnership'],
+  },
+
+  // HR & TRAINING
+  {
+    id: 'first-hire-toolkit',
+    name: 'First Hire Toolkit',
+    categoryId: 'hr',
+    categoryName: 'HR & Training',
+    headline: 'Hire your first employees without getting burned by gut feeling.',
+    description: 'Most small business owners hire on instinct and regret it. This gives you a repeatable, professional process with job ad templates, interview scorecards, and aptitude tests so you hire the right people. Job ad template, interview scorecard, aptitude test, and a simple hiring guide.',
+    price: 'K1,800',
+    priceRaw: 1800,
+    billingType: 'one-time',
+    requiresAudit: true,
+    inclusions: [
+      'Job advertisement template',
+      'Interview scorecard',
+      'Aptitude test template',
+      'Hiring process guide',
+    ],
+    targetAudience: 'Businesses hiring their 1st–3rd employee with no HR function.',
+    whatsappMessage: "Hi Designhub! I'm interested in the First Hire Toolkit (K1,800).",
+    relatedProductIds: ['hr-as-a-service', 'business-checkup'],
+  },
+  {
+    id: 'hr-as-a-service',
+    name: 'HR-as-a-Service',
+    categoryId: 'hr',
+    categoryName: 'HR & Training',
+    headline: 'Stop losing your week to hiring, reviews, and performance issues.',
+    description: 'Once you\'ve got 10+ staff, HR starts eating your time. We take it off your plate — ongoing recruitment, onboarding, performance reviews, and staff development — without the cost of a full-time HR manager. Ongoing recruitment support, onboarding, performance reviews, and staff skill development.',
+    price: 'K4,000/month',
+    priceRaw: 4000,
+    billingType: 'monthly',
+    requiresAudit: true,
+    inclusions: [
+      'Ongoing recruitment support',
+      'Employee onboarding systems',
+      'Performance review management',
+      'Employee skill development programs',
+    ],
+    targetAudience: 'SMEs with 10+ staff who need HR but cannot justify a full-time hire.',
+    whatsappMessage: "Hi Designhub! I'm interested in HR-as-a-Service (K4,000/mo).",
+    relatedProductIds: ['first-hire-toolkit', 'business-management-partnership'],
+  },
+
+  // RESEARCH
+  {
+    id: 'know-your-market-snapshot',
+    name: 'Know Your Market Snapshot',
+    categoryId: 'research',
+    categoryName: 'Research',
+    headline: 'Stop guessing with your money when launching something new.',
+    description: 'Launching a new product or entering a new market without research is gambling. This gives you a clear picture of your competitors and your actual customers so you make informed decisions. Competitor benchmark report, customer segment profile, market positioning analysis, and a summary of what it means for you.',
+    price: 'K2,500',
+    priceRaw: 2500,
+    billingType: 'one-time',
+    requiresAudit: true,
+    inclusions: [
+      'Competitor benchmark report',
+      'Customer segment profile',
+      'Market positioning analysis',
+      'Key insights summary',
+    ],
+    targetAudience: 'Businesses about to launch a product or enter a new market area.',
+    whatsappMessage: "Hi Designhub! I'm interested in the Know Your Market Snapshot (K2,500).",
+    relatedProductIds: ['market-intelligence-retainer', 'marketing-growth'],
+  },
+  {
+    id: 'market-intelligence-retainer',
+    name: 'Market Intelligence Retainer',
+    categoryId: 'research',
+    categoryName: 'Research',
+    headline: 'Keep your strategy current as markets shift around you.',
+    description: 'A one-time report goes stale. This keeps your strategy current with quarterly trend reports, continuous competitor tracking, and updated customer segmentation feeding straight into your marketing decisions. Quarterly trend reports, continuous competitor tracking, updated customer segmentation, and marketing plan integration.',
+    price: 'K3,000/month',
+    priceRaw: 3000,
+    billingType: 'monthly',
+    requiresAudit: true,
+    inclusions: [
+      'Quarterly trend reports',
+      'Ongoing competitor tracking',
+      'Customer segmentation updates',
+      'Marketing plan integration',
+    ],
+    targetAudience: 'SMEs actively scaling or fighting for market share.',
+    whatsappMessage: "Hi Designhub! I'm interested in the Market Intelligence Retainer (K3,000/mo).",
+    relatedProductIds: ['know-your-market-snapshot', 'customer-growth'],
+  },
+
+  // CSR
+  {
+    id: 'csr-starter-story',
+    name: 'CSR Starter Story',
+    categoryId: 'csr',
+    categoryName: 'CSR',
+    headline: 'Build local goodwill that people actually know about.',
+    description: 'Good local goodwill only counts if people know about it. We design one community initiative and document it for your social media and PR so you get visibility without a big budget. We design one community initiative and document it for your social media/PR use.',
+    price: 'K1,500',
+    priceRaw: 1500,
+    billingType: 'one-time',
+    requiresAudit: true,
+    inclusions: [
+      'Community initiative design',
+      'PR/social documentation',
+      'Implementation guide',
+      'Impact measurement framework',
+    ],
+    targetAudience: 'Small businesses wanting local goodwill and visibility at low cost.',
+    whatsappMessage: "Hi Designhub! I'm interested in the CSR Starter Story (K1,500).",
+    relatedProductIds: ['csr-program-management', 'marketing-growth'],
+  },
+  {
+    id: 'csr-program-management',
+    name: 'CSR Program Management',
+    categoryId: 'csr',
+    categoryName: 'CSR',
+    headline: 'Run social impact work that investors and your brand can actually show.',
+    description: 'If investors or your brand\'s reputation depend on visible social impact, this needs to be run properly and reported on — not ad hoc. We manage the full program from strategy to stakeholder reporting. Community needs assessment, CSR strategy, ongoing outreach execution, and stakeholder reporting.',
+    price: 'K3,500/month',
+    priceRaw: 3500,
+    billingType: 'monthly',
+    requiresAudit: true,
+    inclusions: [
+      'Community needs assessment',
+      'CSR strategy development',
+      'Ongoing outreach execution',
+      'Stakeholder reporting',
+    ],
+    targetAudience: 'Larger SMEs with brand or investor pressure to show social impact.',
+    whatsappMessage: "Hi Designhub! I'm interested in CSR Program Management (K3,500/mo).",
+    relatedProductIds: ['csr-starter-story', 'business-management-partnership'],
   },
 ];
 
@@ -700,12 +957,16 @@ export const PACKAGE_BUNDLES: PackageBundle[] = [
     name: 'BUSINESS TRANSFORMATION',
     price: 'Custom Solution',
     tagline: 'For businesses ready to become structured and scalable.',
-    description: 'Holistic business overhaul covering strategy, operations, technology systems, marketing, and sales leadership.',
+    description: 'Holistic business overhaul covering strategy, operations, technology systems, marketing, sales, finance, HR, and social impact.',
     inclusions: [
       'Deep Business Diagnostic & Health Audit',
       '90-Day Strategic Growth Plan',
       'Operations & Workflow Systems Automation',
       'Full Sales & Marketing Execution',
+      'Finance Partner Retainer (Monthly Financial Management)',
+      'HR-as-a-Service (Ongoing Recruitment & People Management)',
+      'Market Intelligence Retainer (Quarterly Market Tracking)',
+      'CSR Program Management (Community Impact Strategy)',
       'Executive Management Partnership Retainer',
     ],
     ctaText: 'Talk to a Business Partner',
