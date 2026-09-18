@@ -149,7 +149,7 @@ export default function Solutions() {
           message: inquiryForm.message || null,
           status: 'new',
           source_page: window.location.pathname
-        })
+        } as any)
         .select()
         .single();
 
