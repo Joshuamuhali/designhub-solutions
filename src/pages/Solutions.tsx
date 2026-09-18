@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, MessageCircle, ArrowRight, Rocket, Palette, Globe, Cpu, Megaphone, TrendingUp, BarChart3, PlusCircle } from "lucide-react";
-import { motion } from "framer-motion";
+import { CheckCircle2, MessageCircle, ArrowRight, Rocket, Palette, Globe, Cpu, Megaphone, TrendingUp, BarChart3, PlusCircle, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { PRODUCT_CATEGORIES, PRODUCTS, PACKAGE_BUNDLES, Product } from "@/data/products";
 
 const categoryIcons: Record<string, any> = {
@@ -21,6 +21,9 @@ export default function Solutions() {
   const activeCategoryParam = searchParams.get("category");
   const [selectedCategory, setSelectedCategory] = useState<string>(activeCategoryParam || "all");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
+  const [inquiryProduct, setInquiryProduct] = useState<Product | null>(null);
+  const [inquiryForm, setInquiryForm] = useState({ name: '', email: '', phone: '', company: '', message: '' });
 
   useEffect(() => {
     if (activeCategoryParam) {
@@ -39,6 +42,33 @@ export default function Solutions() {
     } else {
       setSearchParams({ category: catId });
     }
+  };
+
+  const handleWhatsAppClick = (product: Product) => {
+    const phone = "260974399695";
+    const message = product.whatsappMessage;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const handleInquiryClick = (product: Product) => {
+    setInquiryProduct(product);
+    setInquiryForm({ 
+      name: '', 
+      email: '', 
+      phone: '', 
+      company: '', 
+      message: `I'm interested in the ${product.name} (${product.price}). Please provide more information.` 
+    });
+    setIsInquiryModalOpen(true);
+  };
+
+  const handleInquirySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Here you would send the inquiry to your CRM/ERP
+    console.log('Inquiry submitted:', { product: inquiryProduct, ...inquiryForm });
+    alert('Thank you for your inquiry! We will get back to you shortly.');
+    setIsInquiryModalOpen(false);
+    setInquiryForm({ name: '', email: '', phone: '', company: '', message: '' });
   };
 
   return (
@@ -229,28 +259,19 @@ export default function Solutions() {
 
                 <div className="mt-8 pt-4 border-t border-border space-y-2">
                   <Button
-                    asChild
+                    onClick={() => handleWhatsAppClick(prod)}
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md gap-2"
                   >
-                    <a
-                      href={`https://wa.me/0974399695?text=${encodeURIComponent(prod.whatsappMessage)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      Get Started on WhatsApp
-                    </a>
+                    <MessageCircle className="w-4 h-4" />
+                    Get Started on WhatsApp
                   </Button>
 
                   <Button
+                    onClick={() => handleInquiryClick(prod)}
                     variant="outline"
-                    size="sm"
-                    asChild
                     className="w-full text-xs border-primary/30 text-primary hover:bg-primary/5 font-semibold gap-1.5"
                   >
-                    <Link to={`/services/${prod.id}`}>
-                      View Service Landing Page <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                    Send Inquiry to Our Team
                   </Button>
 
                   <Button
@@ -312,17 +333,34 @@ export default function Solutions() {
                     </div>
                   </div>
 
-                  <Button asChild className="w-full bg-primary text-primary-foreground font-bold">
-                    <a
-                      href={`https://wa.me/0974399695?text=${encodeURIComponent(`Hi Designhub! I'm interested in the ${bundle.name} package (${bundle.price}).`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2"
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => window.open(`https://wa.me/260974399695?text=${encodeURIComponent(`Hi Designhub! I'm interested in the ${bundle.name} package (${bundle.price}).`)}`, '_blank')}
+                      className="w-full bg-primary text-primary-foreground font-bold gap-2"
                     >
+                      <MessageCircle className="w-4 h-4" />
                       <span>{bundle.ctaText}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </a>
-                  </Button>
+                    </Button>
+                    <Button
+                      onClick={() => handleInquiryClick({ 
+                        id: bundle.id, 
+                        name: bundle.name, 
+                        categoryId: 'bundle' as any, 
+                        categoryName: 'Bundle', 
+                        headline: bundle.tagline, 
+                        description: bundle.description, 
+                        price: bundle.price, 
+                        billingType: 'custom', 
+                        inclusions: bundle.inclusions, 
+                        targetAudience: '', 
+                        whatsappMessage: `Hi Designhub! I'm interested in the ${bundle.name} package (${bundle.price}).` 
+                      })}
+                      variant="outline"
+                      className="w-full text-xs border-primary/30 text-primary hover:bg-primary/5 font-semibold"
+                    >
+                      Send Inquiry to Our Team
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -330,6 +368,133 @@ export default function Solutions() {
 
         </div>
       </section>
+
+      {/* Inquiry Modal */}
+      <AnimatePresence>
+        {isInquiryModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setIsInquiryModalOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-card rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">Send Inquiry</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {inquiryProduct?.name} - {inquiryProduct?.price}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsInquiryModalOpen(false)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                <form onSubmit={handleInquirySubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={inquiryForm.name}
+                      onChange={(e) => setInquiryForm({ ...inquiryForm, name: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="John Doe"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={inquiryForm.email}
+                      onChange={(e) => setInquiryForm({ ...inquiryForm, email: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="john@example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={inquiryForm.phone}
+                      onChange={(e) => setInquiryForm({ ...inquiryForm, phone: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="+260 XXX XXX XXX"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
+                      Company Name
+                    </label>
+                    <input
+                      type="text"
+                      value={inquiryForm.company}
+                      onChange={(e) => setInquiryForm({ ...inquiryForm, company: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Your Company Ltd"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
+                      Message *
+                    </label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={inquiryForm.message}
+                      onChange={(e) => setInquiryForm({ ...inquiryForm, message: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      placeholder="Tell us more about your requirements..."
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsInquiryModalOpen(false)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1 bg-primary text-primary-foreground font-bold"
+                    >
+                      Send Inquiry
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Layout>
   );
 }
