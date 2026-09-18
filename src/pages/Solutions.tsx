@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, MessageCircle, ArrowRight, Rocket, Palette, Globe, Cpu, Megaphone, TrendingUp, BarChart3, PlusCircle } from "lucide-react";
-import { motion } from "framer-motion";
+import { CheckCircle2, MessageCircle, ArrowRight, Rocket, Palette, Globe, Cpu, Megaphone, TrendingUp, BarChart3, PlusCircle, ChevronDown, Filter } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { PRODUCT_CATEGORIES, PRODUCTS, PACKAGE_BUNDLES, Product } from "@/data/products";
 
 const categoryIcons: Record<string, any> = {
@@ -21,6 +21,7 @@ export default function Solutions() {
   const activeCategoryParam = searchParams.get("category");
   const [selectedCategory, setSelectedCategory] = useState<string>(activeCategoryParam || "all");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   useEffect(() => {
     if (activeCategoryParam) {
@@ -66,12 +67,90 @@ export default function Solutions() {
       </section>
 
       {/* Category Filter Tabs */}
-      <section className="py-8 bg-card border-b border-border sticky top-20 z-30 backdrop-blur-md bg-card/90">
+      <section className="py-4 bg-card border-b border-border sticky top-16 z-30 backdrop-blur-md bg-card/90">
         <div className="section-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {/* Mobile Filter Button */}
+          <div className="md:hidden mb-3">
+            <Button
+              onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
+              variant="outline"
+              className="w-full justify-between bg-muted/50 hover:bg-muted"
+            >
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                <span className="font-semibold">
+                  {selectedCategory === "all" 
+                    ? "All Solutions" 
+                    : PRODUCT_CATEGORIES.find((c) => c.id === selectedCategory)?.name}
+                </span>
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-primary/10 text-primary">
+                  {selectedCategory === "all" 
+                    ? PRODUCTS.length 
+                    : PRODUCTS.filter((p) => p.categoryId === selectedCategory).length}
+                </span>
+              </div>
+              <ChevronDown className={`w-4 h-4 transition-transform ${isMobileFilterOpen ? "rotate-180" : ""}`} />
+            </Button>
+          </div>
+
+          {/* Mobile Filter Dropdown */}
+          <AnimatePresence>
+            {isMobileFilterOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="md:hidden overflow-hidden"
+              >
+                <div className="grid grid-cols-2 gap-2 pb-3">
+                  <button
+                    onClick={() => {
+                      handleCategorySelect("all");
+                      setIsMobileFilterOpen(false);
+                    }}
+                    className={`p-3 rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1 ${
+                      selectedCategory === "all"
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
+                    }`}
+                  >
+                    <span>All Solutions</span>
+                    <span className="text-[10px] opacity-80">{PRODUCTS.length}</span>
+                  </button>
+
+                  {PRODUCT_CATEGORIES.map((cat) => {
+                    const Icon = categoryIcons[cat.id] || Globe;
+                    const isSelected = selectedCategory === cat.id;
+                    const count = PRODUCTS.filter((p) => p.categoryId === cat.id).length;
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          handleCategorySelect(cat.id);
+                          setIsMobileFilterOpen(false);
+                        }}
+                        className={`p-3 rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1 ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground shadow-md"
+                            : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{cat.name}</span>
+                        <span className={`text-[10px] opacity-80`}>{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Desktop Horizontal Tabs */}
+          <div className="hidden md:flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
             <button
               onClick={() => handleCategorySelect("all")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
                 selectedCategory === "all"
                   ? "bg-primary text-primary-foreground shadow-md"
                   : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -91,7 +170,7 @@ export default function Solutions() {
                 <button
                   key={cat.id}
                   onClick={() => handleCategorySelect(cat.id)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+                  className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
                     isSelected
                       ? "bg-primary text-primary-foreground shadow-md"
                       : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
