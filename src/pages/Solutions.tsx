@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, MessageCircle, ArrowRight, Rocket, Palette, Globe, Cpu, Megaphone, TrendingUp, BarChart3, PlusCircle, X } from "lucide-react";
+import { CheckCircle2, MessageCircle, ArrowRight, Rocket, Palette, Globe, Cpu, Megaphone, TrendingUp, BarChart3, PlusCircle, X, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PRODUCT_CATEGORIES, PRODUCTS, PACKAGE_BUNDLES, Product } from "@/data/products";
+import { supabase } from "@/lib/supabase";
 
 const categoryIcons: Record<string, any> = {
   start: Rocket,
@@ -24,6 +25,9 @@ export default function Solutions() {
   const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
   const [inquiryProduct, setInquiryProduct] = useState<Product | null>(null);
   const [inquiryForm, setInquiryForm] = useState({ name: '', email: '', phone: '', company: '', message: '' });
+  const [inquirySubmitted, setInquirySubmitted] = useState(false);
+  const [inquiryError, setInquiryError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (activeCategoryParam) {
@@ -62,13 +66,52 @@ export default function Solutions() {
     setIsInquiryModalOpen(true);
   };
 
-  const handleInquirySubmit = (e: React.FormEvent) => {
+  const handleInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would send the inquiry to your CRM/ERP
-    console.log('Inquiry submitted:', { product: inquiryProduct, ...inquiryForm });
-    alert('Thank you for your inquiry! We will get back to you shortly.');
+    setIsSubmitting(true);
+    setInquiryError(null);
+
+    try {
+      // Send inquiry to Supabase
+      const { data, error } = await supabase
+        .from('inquiries')
+        .insert({
+          name: inquiryForm.name,
+          email: inquiryForm.email,
+          phone: inquiryForm.phone,
+          company: inquiryForm.company,
+          message: inquiryForm.message,
+          product_id: inquiryProduct?.id,
+          product_name: inquiryProduct?.name,
+          product_price: inquiryProduct?.price,
+          status: 'pending',
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Inquiry submission failed:', error);
+        setInquiryError('Failed to submit inquiry. Please try again or contact us via WhatsApp.');
+        return;
+      }
+
+      console.log('Inquiry submitted successfully:', data);
+      setInquirySubmitted(true);
+    } catch (error) {
+      console.error('Inquiry submission exception:', error);
+      setInquiryError('An unexpected error occurred. Please try again or contact us via WhatsApp.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateAccount = () => {
     setIsInquiryModalOpen(false);
+    setInquirySubmitted(false);
     setInquiryForm({ name: '', email: '', phone: '', company: '', message: '' });
+    // Navigate to signup page
+    window.location.href = '/signup';
   };
 
   return (
@@ -263,7 +306,7 @@ export default function Solutions() {
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md gap-2"
                   >
                     <MessageCircle className="w-4 h-4" />
-                    Get Started on WhatsApp
+                    Immediate WhatsApp
                   </Button>
 
                   <Button
@@ -281,7 +324,7 @@ export default function Solutions() {
                     className="w-full text-xs text-muted-foreground"
                   >
                     <Link to={`/project-consultation?product=${prod.id}`}>
-                      Book Full Consultation
+                      Book a Schedule
                     </Link>
                   </Button>
                 </div>
@@ -397,99 +440,155 @@ export default function Solutions() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setIsInquiryModalOpen(false)}
+                    onClick={() => {
+                      setIsInquiryModalOpen(false);
+                      setInquirySubmitted(false);
+                      setInquiryError(null);
+                      setInquiryForm({ name: '', email: '', phone: '', company: '', message: '' });
+                    }}
                   >
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
 
-                <form onSubmit={handleInquirySubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={inquiryForm.name}
-                      onChange={(e) => setInquiryForm({ ...inquiryForm, name: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="John Doe"
-                    />
+                {inquirySubmitted ? (
+                  <div className="space-y-6 text-center py-8">
+                    <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto">
+                      <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-foreground mb-2">Inquiry Submitted!</h4>
+                      <p className="text-sm text-muted-foreground mb-6">
+                        Thank you for your inquiry. We'll get back to you shortly.
+                      </p>
+                    </div>
+                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-left space-y-3">
+                      <p className="text-sm font-semibold text-foreground">
+                        Create an account to track your inquiry status
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        With an account, you can view your inquiry details, track progress, and manage all your interactions with Designhub in one place.
+                      </p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={() => {
+                          setIsInquiryModalOpen(false);
+                          setInquirySubmitted(false);
+                          setInquiryForm({ name: '', email: '', phone: '', company: '', message: '' });
+                        }}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Close
+                      </Button>
+                      <Button
+                        onClick={handleCreateAccount}
+                        className="flex-1 bg-primary text-primary-foreground font-bold"
+                      >
+                        Create Account
+                      </Button>
+                    </div>
                   </div>
+                ) : (
+                  <form onSubmit={handleInquirySubmit} className="space-y-4">
+                    {inquiryError && (
+                      <div className="flex items-start gap-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                        <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                        <p className="text-sm text-destructive">{inquiryError}</p>
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={inquiryForm.name}
+                        onChange={(e) => setInquiryForm({ ...inquiryForm, name: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="John Doe"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={inquiryForm.email}
-                      onChange={(e) => setInquiryForm({ ...inquiryForm, email: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="john@example.com"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={inquiryForm.email}
+                        onChange={(e) => setInquiryForm({ ...inquiryForm, email: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="john@example.com"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={inquiryForm.phone}
-                      onChange={(e) => setInquiryForm({ ...inquiryForm, phone: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="+260 XXX XXX XXX"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={inquiryForm.phone}
+                        onChange={(e) => setInquiryForm({ ...inquiryForm, phone: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="+260 XXX XXX XXX"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
-                      Company Name
-                    </label>
-                    <input
-                      type="text"
-                      value={inquiryForm.company}
-                      onChange={(e) => setInquiryForm({ ...inquiryForm, company: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="Your Company Ltd"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
+                        Company Name
+                      </label>
+                      <input
+                        type="text"
+                        value={inquiryForm.company}
+                        onChange={(e) => setInquiryForm({ ...inquiryForm, company: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="Your Company Ltd"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
-                      Message *
-                    </label>
-                    <textarea
-                      required
-                      rows={4}
-                      value={inquiryForm.message}
-                      onChange={(e) => setInquiryForm({ ...inquiryForm, message: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                      placeholder="Tell us more about your requirements..."
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
+                        Message *
+                      </label>
+                      <textarea
+                        required
+                        rows={4}
+                        value={inquiryForm.message}
+                        onChange={(e) => setInquiryForm({ ...inquiryForm, message: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                        placeholder="Tell us more about your requirements..."
+                      />
+                    </div>
 
-                  <div className="flex gap-3 pt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsInquiryModalOpen(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="flex-1 bg-primary text-primary-foreground font-bold"
-                    >
-                      Send Inquiry
-                    </Button>
-                  </div>
-                </form>
+                    <div className="flex gap-3 pt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsInquiryModalOpen(false);
+                          setInquiryError(null);
+                        }}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="flex-1 bg-primary text-primary-foreground font-bold"
+                      >
+                        {isSubmitting ? 'Sending...' : 'Send Inquiry'}
+                      </Button>
+                    </div>
+                  </form>
+                )}
               </div>
             </motion.div>
           </motion.div>
