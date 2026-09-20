@@ -13,7 +13,10 @@ CREATE TABLE IF NOT EXISTS service_inquiries (
   business_name TEXT,
   message TEXT,
   status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'quoted', 'won', 'lost')),
-  source_page TEXT
+  source_page TEXT,
+  utm_source TEXT,
+  utm_medium TEXT,
+  utm_campaign TEXT
 );
 
 -- Enable RLS

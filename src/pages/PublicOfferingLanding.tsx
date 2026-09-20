@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { offeringService, OfferingItem } from '@/services/offeringService';
+import React, { useState } from 'react';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useOfferingBySlug } from '@/hooks/useOffering';
+import type { OfferingItem } from '@/services/offeringService';
+import { getServiceBySlug, isBundleSlug, ServiceWithSlug, BundleWithSlug } from '@/data/services';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,10 +22,15 @@ import {
   ChevronLeft,
   Calendar,
   Check,
-  ChevronRight
+  ChevronRight,
+  MessageCircle,
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { supabase } from '@/lib/supabase';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface PublicOfferingLandingProps {
   type: 'service' | 'product';
@@ -32,30 +39,10 @@ interface PublicOfferingLandingProps {
 export default function PublicOfferingLanding({ type }: PublicOfferingLandingProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [offering, setOffering] = useState<OfferingItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: offering, isLoading, error } = useOfferingBySlug(slug || '', type);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchOffering = async () => {
-      setLoading(true);
-      if (slug) {
-        const item = await offeringService.getOfferingBySlug(slug, type);
-        if (isMounted) {
-          setOffering(item);
-          setLoading(false);
-        }
-      } else {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    fetchOffering();
-    return () => { isMounted = false; };
-  }, [slug, type]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col justify-between">
         <Navbar />
@@ -68,7 +55,7 @@ export default function PublicOfferingLanding({ type }: PublicOfferingLandingPro
     );
   }
 
-  if (!offering) {
+  if (error || !offering) {
     return (
       <div className="min-h-screen bg-background flex flex-col justify-between">
         <Navbar />

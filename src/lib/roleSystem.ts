@@ -1,8 +1,11 @@
 // ROLE SYSTEM - Complete role categorization and routing
 // This defines the entire role hierarchy and routing structure
+// Roles must match the CHECK constraint in public.profiles exactly
+
+import type { Role } from '@/contexts/AuthContext';
 
 export interface RoleDefinition {
-  role: string;
+  role: Role;
   title: string;
   description: string;
   category: 'admin' | 'sales' | 'finance' | 'marketing' | 'support' | 'client';
@@ -12,7 +15,7 @@ export interface RoleDefinition {
   permissions: string[];
 }
 
-export const ROLE_HIERARCHY: Record<string, RoleDefinition> = {
+export const ROLE_HIERARCHY: Record<Role, RoleDefinition> = {
   super_admin: {
     role: 'super_admin',
     title: 'Super Admin',

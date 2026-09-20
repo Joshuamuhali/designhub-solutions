@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, MessageSquare, FileText, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
-import { erpService, ERPRevision } from '@/services/erpService';
+import { useClientApproveProof, useClientRequestRevision } from '@/hooks/useERP';
+import type { ERPRevision } from '@/services/erpService';
 import { toast } from 'sonner';
 
 interface ClientApprovalModalProps {
@@ -24,32 +25,30 @@ export const ClientApprovalModal: React.FC<ClientApprovalModalProps> = ({
 }) => {
   const [feedbackMode, setFeedbackMode] = useState<'view' | 'revision'>('view');
   const [revisionNotes, setRevisionNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const approveProof = useClientApproveProof();
+  const requestRevision = useClientRequestRevision();
 
   const handleApprove = async () => {
-    setIsSubmitting(true);
-    const success = await erpService.clientApproveProof(projectId, revision?.id);
-    setIsSubmitting(false);
-
-    if (success) {
-      toast.success('Proof approved! Project status updated to Client Approved.');
-      onSuccess();
-      onClose();
-    }
+    approveProof.mutate({ projectId, revisionId: revision?.id }, {
+      onSuccess: () => {
+        toast.success('Proof approved! Project status updated to Client Approved.');
+        onSuccess();
+        onClose();
+      }
+    });
   };
 
   const handleRequestRevision = async () => {
     if (!revisionNotes.trim()) return;
 
-    setIsSubmitting(true);
-    const success = await erpService.clientRequestRevision(projectId, revision?.id || 'r-1', revisionNotes);
-    setIsSubmitting(false);
-
-    if (success) {
-      toast.success('Revision request sent to the design team.');
-      onSuccess();
-      onClose();
-    }
+    requestRevision.mutate({ projectId, revisionId: revision?.id || 'r-1', feedback: revisionNotes }, {
+      onSuccess: () => {
+        toast.success('Revision request sent to the design team.');
+        onSuccess();
+        onClose();
+      }
+    });
   };
 
   return (
@@ -118,10 +117,10 @@ export const ClientApprovalModal: React.FC<ClientApprovalModalProps> = ({
 
               <Button
                 onClick={handleApprove}
-                disabled={isSubmitting}
+                disabled={approveProof.isPending}
                 className="w-full sm:w-auto text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold gap-1.5"
               >
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                {approveProof.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 Approve & Sign Off
               </Button>
             </div>
@@ -147,10 +146,10 @@ export const ClientApprovalModal: React.FC<ClientApprovalModalProps> = ({
 
               <Button
                 onClick={handleRequestRevision}
-                disabled={isSubmitting || !revisionNotes.trim()}
+                disabled={requestRevision.isPending || !revisionNotes.trim()}
                 className="text-xs font-semibold gap-1.5"
               >
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                {requestRevision.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
                 Send Revision Request
               </Button>
             </div>

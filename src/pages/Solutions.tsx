@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, MessageCircle, ArrowRight, Rocket, Palette, Globe, Cpu, Megaphone, TrendingUp, BarChart3, PlusCircle, X, AlertCircle } from "lucide-react";
@@ -19,6 +19,7 @@ const categoryIcons: Record<string, any> = {
 
 export default function Solutions() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const activeCategoryParam = searchParams.get("category");
   const [selectedCategory, setSelectedCategory] = useState<string>(activeCategoryParam || "all");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -315,9 +316,10 @@ export default function Solutions() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.4 }}
                 whileHover={{ y: -6 }}
-                className={`p-6 rounded-2xl border bg-card flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-300 relative ${
+                className={`p-6 rounded-2xl border bg-card flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-300 relative cursor-pointer ${
                   prod.featured ? "border-primary ring-2 ring-primary/20" : "border-border"
                 }`}
+                onClick={() => navigate(`/services/${prod.id}`)}
               >
                 {prod.featured && (
                   <span className="absolute -top-3 right-6 px-3 py-1 bg-primary text-primary-foreground text-[10px] font-extrabold uppercase tracking-wider rounded-full shadow-sm">
@@ -420,9 +422,10 @@ export default function Solutions() {
               {PACKAGE_BUNDLES.map((bundle) => (
                 <div
                   key={bundle.id}
-                  className={`p-6 rounded-2xl border bg-card flex flex-col justify-between space-y-6 ${
+                  className={`p-6 rounded-2xl border bg-card flex flex-col justify-between space-y-6 cursor-pointer hover:shadow-xl transition-all ${
                     bundle.popular ? "border-primary shadow-lg ring-1 ring-primary" : "border-border"
                   }`}
+                  onClick={() => navigate(`/services/${bundle.id}`)}
                 >
                   <div>
                     {bundle.popular && (

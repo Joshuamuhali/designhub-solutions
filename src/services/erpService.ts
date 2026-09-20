@@ -191,19 +191,25 @@ export const erpService = {
         `)
         .order('created_at', { ascending: false });
 
-      if (error || !data || data.length === 0) {
-        return [MOCK_PROJECT];
+      if (error) {
+        console.error('[erp] getProjects failed:', error);
+        throw new Error(`Failed to load projects: ${error.message}`);
+      }
+
+      if (!data || data.length === 0) {
+        return [];
       }
 
       return data.map((p: any) => ({
         ...p,
-        company_name: p.companies?.name || 'Client Business',
-        contact_name: p.contacts?.full_name || 'Primary Contact',
+        company_name: p.companies?.name || '',
+        contact_name: p.contacts?.full_name || '',
         contact_email: p.contacts?.email || '',
         contact_phone: p.contacts?.phone || ''
       }));
-    } catch (err) {
-      return [MOCK_PROJECT];
+    } catch (err: any) {
+      console.error('[erp] getProjects error:', err);
+      throw new Error(`Failed to load projects: ${err.message}`);
     }
   },
 
@@ -216,60 +222,80 @@ export const erpService = {
     invoice?: ERPInvoice;
   }> {
     try {
-      const { data: project } = await (supabase as any)
+      const { data: project, error: projectError } = await (supabase as any)
         .from('projects')
         .select(`*, companies(name), contacts(full_name, email, phone)`)
         .eq('id', projectId)
         .single();
 
-      const { data: tasks } = await (supabase as any)
+      if (projectError) {
+        console.error('[erp] getProjectDetails project failed:', projectError);
+        throw new Error(`Failed to load project: ${projectError.message}`);
+      }
+
+      const { data: tasks, error: tasksError } = await (supabase as any)
         .from('project_tasks')
         .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: true });
 
-      const { data: files } = await (supabase as any)
+      if (tasksError) {
+        console.error('[erp] getProjectDetails tasks failed:', tasksError);
+        throw new Error(`Failed to load tasks: ${tasksError.message}`);
+      }
+
+      const { data: files, error: filesError } = await (supabase as any)
         .from('project_files')
         .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
-      const { data: revisions } = await (supabase as any)
+      if (filesError) {
+        console.error('[erp] getProjectDetails files failed:', filesError);
+        throw new Error(`Failed to load files: ${filesError.message}`);
+      }
+
+      const { data: revisions, error: revisionsError } = await (supabase as any)
         .from('project_revisions')
         .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
-      const { data: invoice } = await (supabase as any)
+      if (revisionsError) {
+        console.error('[erp] getProjectDetails revisions failed:', revisionsError);
+        throw new Error(`Failed to load revisions: ${revisionsError.message}`);
+      }
+
+      const { data: invoice, error: invoiceError } = await (supabase as any)
         .from('invoices')
         .select('*')
         .eq('project_id', projectId)
-        .single();
+        .maybeSingle();
+
+      if (invoiceError) {
+        console.error('[erp] getProjectDetails invoice failed:', invoiceError);
+        throw new Error(`Failed to load invoice: ${invoiceError.message}`);
+      }
 
       const pObj = project as any;
-      const p: ERPProject = pObj ? {
+      const p: ERPProject = {
         ...pObj,
-        company_name: pObj.companies?.name || 'ABC Construction Ltd',
-        contact_name: pObj.contacts?.full_name || 'John Banda',
-        contact_email: pObj.contacts?.email || 'john@abcconstruction.com',
-        contact_phone: pObj.contacts?.phone || '+260 971 112 233'
-      } : MOCK_PROJECT;
+        company_name: pObj.companies?.name || '',
+        contact_name: pObj.contacts?.full_name || '',
+        contact_email: pObj.contacts?.email || '',
+        contact_phone: pObj.contacts?.phone || ''
+      };
 
       return {
         project: p,
-        tasks: (tasks && tasks.length > 0) ? tasks : MOCK_TASKS,
-        files: (files && files.length > 0) ? files : MOCK_FILES,
+        tasks: tasks || [],
+        files: files || [],
         revisions: revisions || [],
-        invoice: invoice || MOCK_INVOICE
+        invoice: invoice || undefined
       };
-    } catch (err) {
-      return {
-        project: MOCK_PROJECT,
-        tasks: MOCK_TASKS,
-        files: MOCK_FILES,
-        revisions: [],
-        invoice: MOCK_INVOICE
-      };
+    } catch (err: any) {
+      console.error('[erp] getProjectDetails error:', err);
+      throw new Error(`Failed to load project details: ${err.message}`);
     }
   },
 
@@ -277,9 +303,14 @@ export const erpService = {
   async updateTaskStatus(taskId: string, status: ERPTask['status']): Promise<boolean> {
     try {
       const { error } = await (supabase as any).from('project_tasks').update({ status }).eq('id', taskId);
-      return !error;
-    } catch {
+      if (error) {
+        console.error('[erp] updateTaskStatus failed:', error);
+        throw new Error(`Failed to update task: ${error.message}`);
+      }
       return true;
+    } catch (err: any) {
+      console.error('[erp] updateTaskStatus error:', err);
+      throw new Error(`Failed to update task: ${err.message}`);
     }
   },
 
@@ -293,9 +324,14 @@ export const erpService = {
         status: 'todo',
         due_date: dueDate || new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]
       });
-      return !error;
-    } catch {
+      if (error) {
+        console.error('[erp] createTask failed:', error);
+        throw new Error(`Failed to create task: ${error.message}`);
+      }
       return true;
+    } catch (err: any) {
+      console.error('[erp] createTask error:', err);
+      throw new Error(`Failed to create task: ${err.message}`);
     }
   },
 
@@ -310,16 +346,21 @@ export const erpService = {
         visibility,
         version: 1
       });
-      return !error;
-    } catch {
+      if (error) {
+        console.error('[erp] uploadProjectFile failed:', error);
+        throw new Error(`Failed to upload file: ${error.message}`);
+      }
       return true;
+    } catch (err: any) {
+      console.error('[erp] uploadProjectFile error:', err);
+      throw new Error(`Failed to upload file: ${err.message}`);
     }
   },
 
   // Submit Proof for PM QA / Client Review
   async submitProofForReview(projectId: string, proofUrl: string, designerNotes?: string): Promise<boolean> {
     try {
-      await (supabase as any).from('project_revisions').insert({
+      const { error: revisionError } = await (supabase as any).from('project_revisions').insert({
         project_id: projectId,
         version_number: 1,
         proof_file_url: proofUrl,
@@ -327,10 +368,21 @@ export const erpService = {
         status: 'pending_review'
       });
 
-      await (supabase as any).from('projects').update({ status: 'client_review', progress_percentage: 85 }).eq('id', projectId);
+      if (revisionError) {
+        console.error('[erp] submitProofForReview revision failed:', revisionError);
+        throw new Error(`Failed to submit revision: ${revisionError.message}`);
+      }
+
+      const { error: projectError } = await (supabase as any).from('projects').update({ status: 'client_review', progress_percentage: 85 }).eq('id', projectId);
+      if (projectError) {
+        console.error('[erp] submitProofForReview project update failed:', projectError);
+        throw new Error(`Failed to update project: ${projectError.message}`);
+      }
+
       return true;
-    } catch {
-      return true;
+    } catch (err: any) {
+      console.error('[erp] submitProofForReview error:', err);
+      throw new Error(`Failed to submit proof: ${err.message}`);
     }
   },
 
@@ -338,40 +390,58 @@ export const erpService = {
   async clientApproveProof(projectId: string, revisionId?: string): Promise<boolean> {
     try {
       if (revisionId) {
-        await (supabase as any).from('project_revisions').update({
+        const { error } = await (supabase as any).from('project_revisions').update({
           status: 'approved',
           reviewed_at: new Date().toISOString()
         }).eq('id', revisionId);
+        if (error) {
+          console.error('[erp] clientApproveProof revision failed:', error);
+          throw new Error(`Failed to approve revision: ${error.message}`);
+        }
       }
 
-      await (supabase as any).from('projects').update({
+      const { error } = await (supabase as any).from('projects').update({
         status: 'client_approved',
         progress_percentage: 95
       }).eq('id', projectId);
+      if (error) {
+        console.error('[erp] clientApproveProof project update failed:', error);
+        throw new Error(`Failed to update project: ${error.message}`);
+      }
 
       return true;
-    } catch {
-      return true;
+    } catch (err: any) {
+      console.error('[erp] clientApproveProof error:', err);
+      throw new Error(`Failed to approve proof: ${err.message}`);
     }
   },
 
   // Client Request Revision
   async clientRequestRevision(projectId: string, revisionId: string, feedback: string): Promise<boolean> {
     try {
-      await (supabase as any).from('project_revisions').update({
+      const { error } = await (supabase as any).from('project_revisions').update({
         status: 'revision_requested',
         client_feedback: feedback,
         reviewed_at: new Date().toISOString()
       }).eq('id', revisionId);
+      if (error) {
+        console.error('[erp] clientRequestRevision revision failed:', error);
+        throw new Error(`Failed to request revision: ${error.message}`);
+      }
 
-      await (supabase as any).from('projects').update({
+      const { error: projectError } = await (supabase as any).from('projects').update({
         status: 'revision_required',
         progress_percentage: 75
       }).eq('id', projectId);
+      if (projectError) {
+        console.error('[erp] clientRequestRevision project update failed:', projectError);
+        throw new Error(`Failed to update project: ${projectError.message}`);
+      }
 
       return true;
-    } catch {
-      return true;
+    } catch (err: any) {
+      console.error('[erp] clientRequestRevision error:', err);
+      throw new Error(`Failed to request revision: ${err.message}`);
     }
   },
 
@@ -380,14 +450,17 @@ export const erpService = {
     try {
       const invNumber = 'DH-INV-' + Math.floor(100000 + Math.random() * 900000);
 
-      await (supabase as any).from('projects').update({
+      const { error: projectError } = await (supabase as any).from('projects').update({
         status: 'completed',
         progress_percentage: 100,
         completed_at: new Date().toISOString()
       }).eq('id', projectId);
+      if (projectError) {
+        console.error('[erp] confirmProjectCompletion project failed:', projectError);
+        throw new Error(`Failed to complete project: ${projectError.message}`);
+      }
 
-      // Create Invoice automatically
-      await (supabase as any).from('invoices').insert({
+      const { error: invoiceError } = await (supabase as any).from('invoices').insert({
         invoice_number: invNumber,
         project_id: projectId,
         amount: 5000,
@@ -396,21 +469,30 @@ export const erpService = {
         status: 'unpaid',
         due_date: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]
       });
+      if (invoiceError) {
+        console.error('[erp] confirmProjectCompletion invoice failed:', invoiceError);
+        throw new Error(`Failed to create invoice: ${invoiceError.message}`);
+      }
 
       return { success: true, invoiceNumber: invNumber };
-    } catch {
-      return { success: true, invoiceNumber: 'DH-INV-849201' };
+    } catch (err: any) {
+      console.error('[erp] confirmProjectCompletion error:', err);
+      throw new Error(`Failed to complete project: ${err.message}`);
     }
   },
 
   // Fetch Invoices
   async getInvoices(): Promise<ERPInvoice[]> {
     try {
-      const { data } = await (supabase as any).from('invoices').select('*').order('created_at', { ascending: false });
-      if (data && data.length > 0) return data;
-      return [MOCK_INVOICE];
-    } catch {
-      return [MOCK_INVOICE];
+      const { data, error } = await (supabase as any).from('invoices').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.error('[erp] getInvoices failed:', error);
+        throw new Error(`Failed to load invoices: ${error.message}`);
+      }
+      return data || [];
+    } catch (err: any) {
+      console.error('[erp] getInvoices error:', err);
+      throw new Error(`Failed to load invoices: ${err.message}`);
     }
   },
 
@@ -418,32 +500,46 @@ export const erpService = {
   async recordPayment(invoiceId: string, amount: number, paymentMethod: ERPPayment['payment_method']): Promise<boolean> {
     try {
       const refNo = 'PAY-' + Math.floor(100000 + Math.random() * 900000);
-      await (supabase as any).from('payments').insert({
+      const { error: paymentError } = await (supabase as any).from('payments').insert({
         invoice_id: invoiceId,
         amount,
         payment_method: paymentMethod,
         reference_number: refNo,
         status: 'completed'
       });
+      if (paymentError) {
+        console.error('[erp] recordPayment payment failed:', paymentError);
+        throw new Error(`Failed to record payment: ${paymentError.message}`);
+      }
 
-      await (supabase as any).from('invoices').update({
+      const { error: invoiceError } = await (supabase as any).from('invoices').update({
         status: 'paid',
         paid_at: new Date().toISOString()
       }).eq('id', invoiceId);
+      if (invoiceError) {
+        console.error('[erp] recordPayment invoice update failed:', invoiceError);
+        throw new Error(`Failed to update invoice: ${invoiceError.message}`);
+      }
 
       return true;
-    } catch {
-      return true;
+    } catch (err: any) {
+      console.error('[erp] recordPayment error:', err);
+      throw new Error(`Failed to record payment: ${err.message}`);
     }
   },
 
   // Submit Post-Project Feedback
   async submitFeedback(payload: ERPFeedback): Promise<boolean> {
     try {
-      await (supabase as any).from('feedbacks').insert(payload);
+      const { error } = await (supabase as any).from('feedbacks').insert(payload);
+      if (error) {
+        console.error('[erp] submitFeedback failed:', error);
+        throw new Error(`Failed to submit feedback: ${error.message}`);
+      }
       return true;
-    } catch {
-      return true;
+    } catch (err: any) {
+      console.error('[erp] submitFeedback error:', err);
+      throw new Error(`Failed to submit feedback: ${err.message}`);
     }
   }
 };

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star, CheckCircle2, Heart, Sparkles, Loader2 } from 'lucide-react';
-import { erpService } from '@/services/erpService';
+import { useSubmitFeedback } from '@/hooks/useERP';
 import { toast } from 'sonner';
 
 interface FeedbackModalProps {
@@ -21,27 +21,25 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
   const [comments, setComments] = useState('');
   const [testimonial, setTestimonial] = useState('');
   const [wouldRecommend, setWouldRecommend] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const submitFeedback = useSubmitFeedback();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    const success = await erpService.submitFeedback({
+    submitFeedback.mutate({
       project_id: projectId,
       rating,
       comments,
       would_recommend: wouldRecommend,
       testimonial
+    }, {
+      onSuccess: () => {
+        toast.success('Thank you! Your feedback has been recorded.');
+        setSubmitted(true);
+      }
     });
-
-    setIsSubmitting(false);
-
-    if (success) {
-      toast.success('Thank you! Your feedback has been recorded.');
-      setSubmitted(true);
-    }
   };
 
   return (
@@ -118,8 +116,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
               <Button type="button" variant="ghost" size="sm" onClick={onClose} className="text-xs">
                 Skip
               </Button>
-              <Button type="submit" size="sm" disabled={isSubmitting} className="text-xs font-semibold gap-1.5">
-                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />}
+              <Button type="submit" size="sm" disabled={submitFeedback.isPending} className="text-xs font-semibold gap-1.5">
+                {submitFeedback.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />}
                 Submit Feedback
               </Button>
             </div>

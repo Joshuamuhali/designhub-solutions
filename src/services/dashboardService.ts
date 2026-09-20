@@ -139,12 +139,12 @@ export interface Lead {
 
 export interface Task {
   id: string;
+  project_id: string;
   title: string;
   description: string;
   due_date: string;
   priority: 'high' | 'medium' | 'low';
   status: 'pending' | 'completed';
-  lead_id?: string;
 }
 
 export interface Commission {
@@ -329,12 +329,18 @@ export const getSystemStats = async (): Promise<SystemStats> => {
     const totalRevenue = invoices?.reduce((sum, inv) => sum + ((inv as any)?.amount || 0), 0) || 0;
     const activeProjects = projects?.filter((p: any) => p.status === 'in_progress').length || 0;
 
+    // Get inactive users
+    const { data: inactiveUsers } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('status', 'inactive');
+
     return {
       totalUsers: users?.length || 0,
       activeUsers: users?.length || 0,
       totalRevenue,
       totalProjects: projects?.length || 0,
-      pendingApprovals: 0, // TODO: Implement approvals table
+      pendingApprovals: inactiveUsers?.length || 0,
       systemHealth: 'healthy'
     };
   } catch (error) {
@@ -383,14 +389,27 @@ export const getAuditLogs = async (): Promise<AuditLog[]> => {
 // Admin Dashboard API calls
 export const getDepartmentStats = async (departmentId: string): Promise<DepartmentStats> => {
   try {
-    // TODO: Implement department-specific stats
+    const { data: teamMembers } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('department_id', departmentId);
+
+    const { data: projects } = await supabase
+      .from('projects')
+      .select('status, deal_value')
+      .eq('department_id', departmentId);
+
+    const activeProjects = projects?.filter((p: any) => p.status === 'in_progress').length || 0;
+    const completedProjects = projects?.filter((p: any) => p.status === 'completed').length || 0;
+    const revenue = projects?.reduce((sum: number, p: any) => sum + Number(p.deal_value || 0), 0) || 0;
+
     return {
-      totalTeamMembers: 0,
-      activeProjects: 0,
-      completedProjects: 0,
-      revenue: 0,
+      totalTeamMembers: teamMembers?.length || 0,
+      activeProjects,
+      completedProjects,
+      revenue,
       pendingApprovals: 0,
-      avgPerformance: 0
+      avgPerformance: projects?.length > 0 ? (completedProjects / projects.length) * 100 : 0
     };
   } catch (error) {
     console.error('Error fetching department stats:', error);
@@ -417,8 +436,9 @@ export const getTeamMembers = async (departmentId: string): Promise<TeamMember[]
 // Sales Dashboard API calls
 export const getSalesMetrics = async (teamId?: string): Promise<SalesMetrics> => {
   try {
+    // 'deals' are leads with status 'closed-won'
     const { data: deals, error: dealsError } = await supabase
-      .from('deals')
+      .from('leads')
       .select('*')
       .eq('status', 'closed-won');
 
@@ -433,14 +453,24 @@ export const getSalesMetrics = async (teamId?: string): Promise<SalesMetrics> =>
     const totalRevenue = deals?.reduce((sum, deal) => sum + ((deal as any)?.value || 0), 0) || 0;
     const convertedLeads = leads?.filter((lead: any) => lead.status === 'closed-won').length || 0;
 
+    // Get team size (sales reps)
+    const { data: salesTeam } = await supabase
+      .from('profiles')
+      .select('id')
+      .in('role', ['sales_rep', 'sales_head']);
+
+    // Calculate performance (conversion rate)
+    const totalLeads = leads?.length || 0;
+    const avgPerformance = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
+
     return {
       totalRevenue,
-      targetRevenue: 0, // TODO: Implement targets
-      totalLeads: leads?.length || 0,
+      targetRevenue: totalRevenue * 1.2, // 20% above current as target
+      totalLeads,
       convertedLeads,
       pendingLeads: leads?.filter((lead: any) => lead.status === 'new' || (lead as any).status === 'contacted').length || 0,
-      teamSize: 0, // TODO: Get team size
-      avgPerformance: 0 // TODO: Calculate performance
+      teamSize: salesTeam?.length || 0,
+      avgPerformance
     };
   } catch (error) {
     console.error('Error fetching sales metrics:', error);
@@ -488,7 +518,7 @@ export const getLeads = async (assignedTo?: string): Promise<Lead[]> => {
 export const getTasks = async (assignedTo?: string): Promise<Task[]> => {
   try {
     let query = supabase
-      .from('tasks')
+      .from('project_tasks')
       .select('*')
       .order('due_date', { ascending: true });
 
@@ -549,13 +579,22 @@ export const getFinancialMetrics = async (): Promise<FinancialMetrics> => {
     const netProfit = totalRevenue - totalExpenses;
     const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
+    // Get pending and overdue invoices
+    const { data: allInvoices } = await supabase
+      .from('invoices')
+      .select('status, due_date, amount');
+
+    const now = new Date().toISOString();
+    const pendingInvoices = allInvoices?.filter((inv: any) => inv.status === 'draft' || inv.status === 'unpaid').length || 0;
+    const overdueInvoices = allInvoices?.filter((inv: any) => inv.due_date < now && inv.status !== 'paid' && inv.status !== 'cancelled').length || 0;
+
     return {
       totalRevenue,
       totalExpenses,
       netProfit,
       profitMargin,
-      pendingInvoices: 0, // TODO: Implement
-      overdueInvoices: 0, // TODO: Implement
+      pendingInvoices,
+      overdueInvoices,
       totalInvoices: revenue?.length || 0,
       cashFlow: netProfit
     };
@@ -597,8 +636,49 @@ export const getExpenses = async (): Promise<Expense[]> => {
 
 export const getTransactions = async (): Promise<Transaction[]> => {
   try {
-    // TODO: Implement transactions table
-    return [];
+    const { data: invoices, error: invoicesError } = await supabase
+      .from('invoices')
+      .select('id, invoice_number, amount, created_at, status')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (invoicesError) throw invoicesError;
+
+    const { data: expenses, error: expensesError } = await supabase
+      .from('expenses')
+      .select('id, description, amount, date, status')
+      .order('date', { ascending: false })
+      .limit(20);
+
+    if (expensesError) throw expensesError;
+
+    const transactions: Transaction[] = [];
+
+    (invoices as any[] || []).forEach((inv) => {
+      transactions.push({
+        id: inv.id,
+        type: 'income',
+        description: `Invoice ${inv.invoice_number}`,
+        amount: inv.amount,
+        date: inv.created_at,
+        category: 'invoice',
+        reference: inv.invoice_number
+      });
+    });
+
+    (expenses as any[] || []).forEach((exp) => {
+      transactions.push({
+        id: exp.id,
+        type: 'expense',
+        description: exp.description,
+        amount: exp.amount,
+        date: exp.date,
+        category: exp.category || 'general',
+        reference: undefined
+      });
+    });
+
+    return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   } catch (error) {
     console.error('Error fetching transactions:', error);
     throw error;
@@ -629,7 +709,9 @@ export const getCampaignMetrics = async (): Promise<CampaignMetrics> => {
       totalSpent,
       totalRevenue,
       roi,
-      avgEngagement: 0 // TODO: Calculate engagement
+      avgEngagement: campaigns?.length > 0
+        ? (campaigns.reduce((sum: number, c: any) => sum + (c.leads || 0), 0) / campaigns.length)
+        : 0
     };
   } catch (error) {
     console.error('Error fetching campaign metrics:', error);
@@ -654,8 +736,39 @@ export const getCampaigns = async (): Promise<Campaign[]> => {
 
 export const getLeadSources = async (): Promise<LeadSource[]> => {
   try {
-    // TODO: Implement lead sources analytics
-    return [];
+    const { data: leads } = await supabase
+      .from('leads')
+      .select('utm_source, utm_medium, value, status');
+
+    if (!leads || leads.length === 0) return [];
+
+    const sourceMap = new Map<string, { leads: number; cost: number; converted: number; revenue: number }>();
+
+    (leads as any[]).forEach((lead) => {
+      const source = lead.utm_source || 'direct';
+      const current = sourceMap.get(source) || { leads: 0, cost: 0, converted: 0, revenue: 0 };
+      current.leads += 1;
+      if (lead.status === 'closed-won') {
+        current.converted += 1;
+        current.revenue += Number(lead.value || 0);
+      }
+      sourceMap.set(source, current);
+    });
+
+    const result: LeadSource[] = [];
+    sourceMap.forEach((stats, source) => {
+      const costPerLead = stats.leads > 0 ? stats.cost / stats.leads : 0;
+      const conversionRate = stats.leads > 0 ? (stats.converted / stats.leads) * 100 : 0;
+      result.push({
+        source,
+        leads: stats.leads,
+        cost_per_lead: costPerLead,
+        conversion_rate: conversionRate,
+        revenue: stats.revenue
+      });
+    });
+
+    return result.sort((a, b) => b.leads - a.leads);
   } catch (error) {
     console.error('Error fetching lead sources:', error);
     throw error;
@@ -691,13 +804,31 @@ export const getSupportMetrics = async (): Promise<SupportMetrics> => {
     const today = new Date().toISOString().split('T')[0];
     const ticketsToday = tickets?.filter((t: any) => t.created_at.startsWith(today)).length || 0;
 
+    // Calculate average response and resolution times
+    const resolvedTicketsWithTimes = tickets?.filter((t: any) => t.status === 'resolved' && t.created_at && t.updated_at) || [];
+    const avgResponseTime = resolvedTicketsWithTimes.length > 0
+      ? resolvedTicketsWithTimes.reduce((sum: number, t: any) => {
+          const created = new Date(t.created_at).getTime();
+          const updated = new Date(t.updated_at).getTime();
+          return sum + ((updated - created) / (1000 * 60 * 60)); // hours
+        }, 0) / resolvedTicketsWithTimes.length
+      : 0;
+
+    const avgResolutionTime = avgResponseTime; // Simplified for now
+
+    // Calculate customer satisfaction from ratings
+    const ticketsWithRatings = tickets?.filter((t: any) => t.customer_rating) || [];
+    const customerSatisfaction = ticketsWithRatings.length > 0
+      ? ticketsWithRatings.reduce((sum: number, t: any) => sum + Number(t.customer_rating), 0) / ticketsWithRatings.length
+      : 0;
+
     return {
       totalTickets: tickets?.length || 0,
       openTickets,
       resolvedTickets,
-      avgResponseTime: 0, // TODO: Calculate from ticket timestamps
-      avgResolutionTime: 0, // TODO: Calculate from ticket timestamps
-      customerSatisfaction: 0, // TODO: Calculate from ratings
+      avgResponseTime,
+      avgResolutionTime,
+      customerSatisfaction,
       ticketsToday,
       escalatedTickets: tickets?.filter((t: any) => t.status === 'escalated').length || 0
     };
@@ -740,8 +871,40 @@ export const getSupportAgents = async (): Promise<SupportAgent[]> => {
 
 export const getCustomers = async (): Promise<Customer[]> => {
   try {
-    // TODO: Implement customer analytics
-    return [];
+    const { data: leads } = await supabase
+      .from('leads')
+      .select('id, name, email, company, created_at, status');
+
+    if (!leads || leads.length === 0) return [];
+
+    const customerMap = new Map<string, Customer>();
+
+    (leads as any[]).forEach((lead) => {
+      const email = lead.email;
+      if (!email) return;
+
+      const existing = customerMap.get(email);
+      if (existing) {
+        existing.total_tickets += 1;
+        if (lead.status === 'new' || lead.status === 'contacted') {
+          existing.open_tickets += 1;
+        }
+        existing.last_contact = lead.created_at > existing.last_contact ? lead.created_at : existing.last_contact;
+      } else {
+        customerMap.set(email, {
+          id: lead.id,
+          name: lead.name,
+          email: lead.email,
+          company: lead.company,
+          total_tickets: 1,
+          open_tickets: (lead.status === 'new' || lead.status === 'contacted') ? 1 : 0,
+          satisfaction_score: 0,
+          last_contact: lead.created_at
+        });
+      }
+    });
+
+    return Array.from(customerMap.values()).sort((a, b) => new Date(b.last_contact).getTime() - new Date(a.last_contact).getTime());
   } catch (error) {
     console.error('Error fetching customers:', error);
     throw error;

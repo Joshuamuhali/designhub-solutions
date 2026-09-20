@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { offeringService, OfferingItem } from '@/services/offeringService';
+import React, { useState } from 'react';
+import { useAllOfferings, useSaveOffering } from '@/hooks/useOffering';
+import type { OfferingItem } from '@/services/offeringService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,28 +28,17 @@ import {
 import { toast } from 'sonner';
 
 export default function OfferingsManagement() {
-  const [services, setServices] = useState<OfferingItem[]>([]);
-  const [products, setProducts] = useState<OfferingItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: offeringsData, isLoading, refetch } = useAllOfferings();
+  const saveOffering = useSaveOffering();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'services' | 'products'>('all');
 
   // Modal State for Edit/Create
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<OfferingItem> | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
 
-  const loadData = async () => {
-    setLoading(true);
-    const data = await offeringService.getAllOfferings();
-    setServices(data.services);
-    setProducts(data.products);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
+  const services = offeringsData?.services || [];
+  const products = offeringsData?.products || [];
 
   const handleOpenCreate = (type: 'service' | 'product') => {
     setEditingItem({
@@ -79,28 +69,28 @@ export default function OfferingsManagement() {
     e.preventDefault();
     if (!editingItem || !editingItem.name || !editingItem.type) return;
 
-    setIsSaving(true);
-    const res = await offeringService.saveOffering(editingItem as any);
-    setIsSaving(false);
-
-    if (res.success) {
-      toast.success(`${editingItem.type === 'service' ? 'Service' : 'Product'} saved successfully!`);
-      setIsModalOpen(false);
-      setEditingItem(null);
-      loadData();
-    } else {
-      toast.error(`Error saving: ${res.error}`);
-    }
+    saveOffering.mutate(editingItem as any, {
+      onSuccess: () => {
+        toast.success(`${editingItem.type === 'service' ? 'Service' : 'Product'} saved successfully!`);
+        setIsModalOpen(false);
+        setEditingItem(null);
+        refetch();
+      },
+      onError: (error: any) => {
+        toast.error(`Error saving: ${error.message}`);
+      }
+    });
   };
 
   const handleToggleStatus = async (item: OfferingItem) => {
     const newStatus = item.status === 'published' ? 'draft' : 'published';
     const updated = { ...item, status: newStatus as any };
-    const res = await offeringService.saveOffering(updated);
-    if (res.success) {
-      toast.success(`Status updated to ${newStatus}`);
-      loadData();
-    }
+    saveOffering.mutate(updated, {
+      onSuccess: () => {
+        toast.success(`Status updated to ${newStatus}`);
+        refetch();
+      }
+    });
   };
 
   const allOfferings = [...services, ...products];
@@ -128,7 +118,7 @@ export default function OfferingsManagement() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={loadData} className="gap-1.5 text-xs">
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5 text-xs">
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </Button>
           <Button size="sm" onClick={() => handleOpenCreate('service')} className="gap-1.5 text-xs font-semibold">
@@ -205,7 +195,7 @@ export default function OfferingsManagement() {
       </div>
 
       {/* Offerings Grid */}
-      {loading ? (
+      {isLoading ? (
         <div className="py-20 text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
           <p className="text-xs text-muted-foreground mt-2">Loading CRM offerings...</p>
@@ -438,8 +428,8 @@ export default function OfferingsManagement() {
                 <Button type="button" variant="ghost" size="sm" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" size="sm" disabled={isSaving} className="gap-2">
-                  {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <Button type="submit" size="sm" disabled={saveOffering.isPending} className="gap-2">
+                  {saveOffering.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Save Offering Record
                 </Button>
               </DialogFooter>

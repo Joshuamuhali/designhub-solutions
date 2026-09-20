@@ -47,7 +47,7 @@ const categoryIcons: Record<string, any> = {
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, role, profile } = useAuth();
   const navigate = useNavigate();
 
   // Determine navigation links based on current path
@@ -56,8 +56,7 @@ export function Navbar() {
   const currentNavLinks = isDashboard ? dashboardNavLinks : publicNavLinks;
 
   // Get user role information
-  const userRole = user?.user_metadata?.role || 'client';
-  const roleDefinition = getRoleDefinition(userRole);
+  const roleDefinition = getRoleDefinition(role);
 
   const handleSignOut = async () => {
     await signOut();
@@ -71,7 +70,7 @@ export function Navbar() {
       <div className="section-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <Link to={user ? getRouteForRole(userRole) : '/'} className="flex items-center gap-3">
+          <Link to={user ? getRouteForRole(role) : '/'} className="flex items-center gap-3">
             <img src={logo} alt="Designhub Logo" className="h-10 w-auto" />
             {user && (
               <span className="hidden sm:inline-block px-2.5 py-0.5 text-xs font-semibold bg-primary/10 text-primary rounded-full">
@@ -155,7 +154,7 @@ export function Navbar() {
           {/* Right side buttons */}
           <div className="hidden md:flex items-center gap-3">
             {user ? (
-              <AuthButtons user={user} onSignOut={handleSignOut} />
+              <AuthButtons user={user} onSignOut={handleSignOut} role={role} profile={profile} />
             ) : (
               <>
                 {!isDashboard && (
@@ -273,10 +272,9 @@ export function Navbar() {
   );
 }
 
-function AuthButtons({ user, onSignOut }: { user: any; onSignOut: () => void }) {
+function AuthButtons({ user, onSignOut, role, profile }: { user: any; onSignOut: () => void; role: any; profile: any }) {
   const navigate = useNavigate();
-  const userRole = user?.user_metadata?.role || 'client';
-  const roleDefinition = getRoleDefinition(userRole);
+  const roleDefinition = getRoleDefinition(role);
 
   return (
     <div className="flex items-center gap-3">
@@ -286,7 +284,7 @@ function AuthButtons({ user, onSignOut }: { user: any; onSignOut: () => void }) 
           <Button variant="ghost" size="sm" className="flex items-center gap-2 font-medium">
             <User className="h-4 w-4 text-primary" />
             <span className="hidden sm:block">
-              {user.user_metadata?.full_name || user.email?.split('@')[0]}
+              {profile?.full_name || user.email?.split('@')[0]}
             </span>
             <ChevronDown className="h-3 w-3 opacity-60" />
           </Button>
@@ -297,7 +295,7 @@ function AuthButtons({ user, onSignOut }: { user: any; onSignOut: () => void }) 
             <div className="text-[11px] text-primary font-medium mt-0.5">{roleDefinition.title}</div>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate(getRouteForRole(userRole))}>
+          <DropdownMenuItem onClick={() => navigate(getRouteForRole(role))}>
             <Home className="mr-2 h-4 w-4" />
             Dashboard
           </DropdownMenuItem>

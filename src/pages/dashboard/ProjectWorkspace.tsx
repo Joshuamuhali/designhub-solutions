@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { erpService, ERPProject, ERPTask, ERPFile, ERPRevision, ERPInvoice } from '@/services/erpService';
+import { useERPProjectDetails, useUpdateTaskStatus, useCreateTask, useUploadProjectFile, useConfirmProjectCompletion, useRecordPayment } from '@/hooks/useERP';
+import type { ERPProject, ERPTask, ERPFile, ERPRevision, ERPInvoice } from '@/services/erpService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,12 +38,18 @@ export default function ProjectWorkspace() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
 
-  const [project, setProject] = useState<ERPProject | null>(null);
-  const [tasks, setTasks] = useState<ERPTask[]>([]);
-  const [files, setFiles] = useState<ERPFile[]>([]);
-  const [revisions, setRevisions] = useState<ERPRevision[]>([]);
-  const [invoice, setInvoice] = useState<ERPInvoice | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: projectData, isLoading, error } = useERPProjectDetails(projectId || '');
+  const updateTaskStatus = useUpdateTaskStatus();
+  const createTask = useCreateTask();
+  const uploadProjectFile = useUploadProjectFile();
+  const confirmProjectCompletion = useConfirmProjectCompletion();
+  const recordPayment = useRecordPayment();
+
+  const project = projectData?.project || null;
+  const tasks = projectData?.tasks || [];
+  const files = projectData?.files || [];
+  const revisions = projectData?.revisions || [];
+  const invoice = projectData?.invoice || null;
 
   // Role Perspective Simulator for Demonstration
   const [activeRoleView, setActiveRoleView] = useState<'pm' | 'designer' | 'sales' | 'client'>('pm');
@@ -58,40 +65,25 @@ export default function ProjectWorkspace() {
   const [uploadFileUrl, setUploadFileUrl] = useState('');
   const [uploadVisibility, setUploadVisibility] = useState<ERPFile['visibility']>('client_review');
 
-  const loadProjectData = async () => {
-    setLoading(true);
-    const id = projectId || 'p1111111-1111-1111-1111-111111111111';
-    const data = await erpService.getProjectDetails(id);
-    setProject(data.project);
-    setTasks(data.tasks);
-    setFiles(data.files);
-    setRevisions(data.revisions);
-    setInvoice(data.invoice || null);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadProjectData();
-  }, [projectId]);
 
   const handleTaskStatusToggle = async (taskId: string, currentStatus: ERPTask['status']) => {
     const nextStatus = currentStatus === 'completed' ? 'todo' : 'completed';
-    const success = await erpService.updateTaskStatus(taskId, nextStatus);
-    if (success) {
-      toast.success('Task status updated');
-      loadProjectData();
-    }
+    updateTaskStatus.mutate({ taskId, status: nextStatus }, {
+      onSuccess: () => toast.success('Task status updated')
+    });
   };
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle || !project) return;
     setIsCreatingTask(true);
-    await erpService.createTask(project.id, newTaskTitle);
-    setIsCreatingTask(false);
-    setNewTaskTitle('');
-    toast.success('New task added');
-    loadProjectData();
+    createTask.mutate({ projectId: project.id, title: newTaskTitle }, {
+      onSuccess: () => {
+        setIsCreatingTask(false);
+        setNewTaskTitle('');
+        toast.success('New task added');
+      }
+    });
   };
 
   const handleUploadFile = async (e: React.FormEvent) => {
@@ -99,36 +91,48 @@ export default function ProjectWorkspace() {
     if (!uploadFileName || !project) return;
 
     const url = uploadFileUrl || 'https://images.unsplash.com/photo-1542744094-3a31b272c490?w=800';
-    await erpService.uploadProjectFile(project.id, uploadFileName, url, uploadVisibility);
-
-    setUploadFileName('');
-    setUploadFileUrl('');
-    toast.success('File uploaded to project repository');
-    loadProjectData();
+    uploadProjectFile.mutate({ projectId: project.id, fileName: uploadFileName, fileUrl: url, visibility: uploadVisibility }, {
+      onSuccess: () => {
+        setUploadFileName('');
+        setUploadFileUrl('');
+        toast.success('File uploaded to project repository');
+      }
+    });
   };
 
   const handlePMConfirmCompletion = async () => {
     if (!project) return;
-    const res = await erpService.confirmProjectCompletion(project.id);
-    if (res.success) {
-      toast.success(`Project Completed! Invoice ${res.invoiceNumber} generated for Accounts.`);
-      loadProjectData();
-    }
+    confirmProjectCompletion.mutate({ projectId: project.id }, {
+      onSuccess: (res) => {
+        toast.success(`Project Completed! Invoice ${res.invoiceNumber} generated for Accounts.`);
+      }
+    });
   };
 
   const handleSimulatePayment = async () => {
     if (!invoice) return;
-    await erpService.recordPayment(invoice.id, invoice.total_amount, 'mobile_money');
-    toast.success('Payment of K5,000 received via Airtel / MTN MoMo!');
-    loadProjectData();
-    setIsFeedbackModalOpen(true);
+    recordPayment.mutate({ invoiceId: invoice.id, amount: invoice.total_amount, paymentMethod: 'mobile_money' }, {
+      onSuccess: () => {
+        toast.success('Payment of K5,000 received via Airtel / MTN MoMo!');
+        setIsFeedbackModalOpen(true);
+      }
+    });
   };
 
-  if (loading || !project) {
+  if (isLoading || !project) {
     return (
       <div className="py-24 text-center">
         <Loader2 className="w-10 h-10 animate-spin mx-auto text-primary" />
         <p className="text-xs text-muted-foreground mt-2">Loading ERP Project Workspace...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-24 text-center">
+        <AlertCircle className="w-10 h-10 mx-auto text-destructive" />
+        <p className="text-xs text-muted-foreground mt-2">Failed to load project: {error.message}</p>
       </div>
     );
   }
@@ -482,7 +486,7 @@ export default function ProjectWorkspace() {
         onClose={() => setIsApprovalModalOpen(false)}
         projectId={project.id}
         revision={revisions[0] || null}
-        onSuccess={loadProjectData}
+        onSuccess={() => {}}
       />
 
       {/* Post-Project Feedback Modal */}

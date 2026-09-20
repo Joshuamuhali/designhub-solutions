@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Phone, Mail, MapPin, Clock, MessageCircle, LogIn, Upload, ChevronRight, CheckCircle, Sparkles } from "lucide-react";
-import { createRecord, createProductInquiryLead } from "@/services/dashboardService";
+import { useCreateProductInquiryLead } from "@/hooks/useDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { PRODUCTS, PRODUCT_CATEGORIES, Product } from "@/data/products";
 
@@ -121,6 +121,7 @@ const ProjectConsultation = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const createProductInquiryLead = useCreateProductInquiryLead();
   const [selectedProduct, setSelectedProduct] = useState<string>(searchParams.get("product") || "");
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get("category") || "");
 
@@ -303,11 +304,10 @@ const ProjectConsultation = () => {
     
     setIsSubmitting(true);
 
-    try {
-      const selectedProdObj = selectedProduct ? PRODUCTS.find(p => p.id === selectedProduct) : null;
-      const selectedCatObj = selectedCategory ? PRODUCT_CATEGORIES.find(c => c.id === selectedCategory) : null;
+    const selectedProdObj = selectedProduct ? PRODUCTS.find(p => p.id === selectedProduct) : null;
+    const selectedCatObj = selectedCategory ? PRODUCT_CATEGORIES.find(c => c.id === selectedCategory) : null;
 
-      await createProductInquiryLead({
+    createProductInquiryLead.mutate({
         name: formData.fullName,
         email: formData.email,
         phone: formData.phone,
@@ -333,111 +333,112 @@ const ProjectConsultation = () => {
         },
         additionalNotes: formData.additionalNotes,
         user_id: user?.id || undefined,
+      }, {
+        onSuccess: () => {
+          toast({
+            title: "Project Inquiry Submitted!",
+            description: user 
+              ? "Your inquiry has been sent to our sales team and added to your Client Portal Dashboard." 
+              : "Thank you! Our sales team will review your project and get back to you within 24 hours.",
+          });
+          // Reset form
+          setFormData({
+            fullName: "",
+            company: "",
+            email: "",
+            phone: "",
+            services: {
+              webDesign: false,
+              digitalMarketing: false,
+              branding: false,
+              videoProduction: false,
+              salesLeadGen: false,
+              strategyConsulting: false,
+            },
+            webDesign: {
+              websiteType: "",
+              numberOfPages: "",
+              cmsEcommerce: "",
+              specialFeatures: "",
+              paymentIntegration: "",
+              inventory: "",
+              productCatalog: "",
+            },
+            digitalMarketing: {
+              package: "",
+              channels: {
+                socialMedia: false,
+                ads: false,
+                seo: false,
+                email: false,
+              },
+              monthlyBudget: "",
+              goal: "",
+              adBudget: "",
+              targetAudience: "",
+              campaignDuration: "",
+            },
+            branding: {
+              serviceType: "",
+              printMaterials: "",
+              brandGuidelines: "",
+              additionalNotes: "",
+              brochures: "",
+              businessCards: "",
+              packaging: "",
+              socialMediaKit: "",
+            },
+            videoProduction: {
+              type: "",
+              length: "",
+              socialMediaReady: "",
+              scriptNeeded: "",
+              storyboard: "",
+              voiceTalent: "",
+              music: "",
+              subtitles: "",
+            },
+            salesLeadGen: {
+              type: "",
+              monthlyBudget: "",
+              leadSourcePreferences: {
+                online: false,
+                offline: false,
+                both: false,
+              },
+              targetMarket: "",
+              adSpend: "",
+              funnelStages: "",
+              kpis: "",
+              reportingFrequency: "",
+            },
+            strategyConsulting: {
+              type: "",
+              duration: "",
+              focusAreas: "",
+              teamSize: "",
+              department: "",
+              learningGoals: "",
+            },
+            desiredStartDate: "",
+            estimatedBudget: "",
+            urgency: "",
+            additionalNotes: "",
+            uploadedFiles: [],
+          });
+        },
+        onError: (error: any) => {
+          console.error('Error submitting project:', error);
+          toast({
+            title: "Error",
+            description: "Failed to submit your project. Please try again or contact us directly.",
+            variant: "destructive"
+          });
+        },
+        onSettled: () => {
+          setIsSubmitting(false);
+        }
       });
-
-      toast({
-        title: "Project Inquiry Submitted!",
-        description: user 
-          ? "Your inquiry has been sent to our sales team and added to your Client Portal Dashboard." 
-          : "Thank you! Our sales team will review your project and get back to you within 24 hours.",
-      });
-
-      // Reset form
-      setFormData({
-        fullName: "",
-        company: "",
-        email: "",
-        phone: "",
-        services: {
-          webDesign: false,
-          digitalMarketing: false,
-          branding: false,
-          videoProduction: false,
-          salesLeadGen: false,
-          strategyConsulting: false,
-        },
-        webDesign: {
-          websiteType: "",
-          numberOfPages: "",
-          cmsEcommerce: "",
-          specialFeatures: "",
-          paymentIntegration: "",
-          inventory: "",
-          productCatalog: "",
-        },
-        digitalMarketing: {
-          package: "",
-          channels: {
-            socialMedia: false,
-            ads: false,
-            seo: false,
-            email: false,
-          },
-          monthlyBudget: "",
-          goal: "",
-          adBudget: "",
-          targetAudience: "",
-          campaignDuration: "",
-        },
-        branding: {
-          serviceType: "",
-          printMaterials: "",
-          brandGuidelines: "",
-          additionalNotes: "",
-          brochures: "",
-          businessCards: "",
-          packaging: "",
-          socialMediaKit: "",
-        },
-        videoProduction: {
-          type: "",
-          length: "",
-          socialMediaReady: "",
-          scriptNeeded: "",
-          storyboard: "",
-          voiceTalent: "",
-          music: "",
-          subtitles: "",
-        },
-        salesLeadGen: {
-          type: "",
-          monthlyBudget: "",
-          leadSourcePreferences: {
-            online: false,
-            offline: false,
-            both: false,
-          },
-          targetMarket: "",
-          adSpend: "",
-          funnelStages: "",
-          kpis: "",
-          reportingFrequency: "",
-        },
-        strategyConsulting: {
-          type: "",
-          duration: "",
-          focusAreas: "",
-          teamSize: "",
-          department: "",
-          learningGoals: "",
-        },
-        desiredStartDate: "",
-        estimatedBudget: "",
-        urgency: "",
-        additionalNotes: "",
-        uploadedFiles: [],
-      });
-
-    } catch (error) {
-      console.error('Error submitting project:', error);
-      toast({
-        title: "Error",
-        description: "Failed to submit your project. Please try again or contact us directly.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   return (

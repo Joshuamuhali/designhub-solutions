@@ -9,22 +9,23 @@ import { PageLoader } from '@/components/ui/loading';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import DashboardRoutes from './pages/dashboard/index';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import AuthCallback from './pages/AuthCallback';
-import Index from "./pages/Index";
-import About from "./pages/About";
-import Solutions from "./pages/Solutions";
-import Work from "./pages/Work";
-import Industries from "./pages/Industries";
-import Insights from "./pages/Insights";
-import FAQ from "./pages/FAQ";
-import Contact from "./pages/Contact";
-import ProjectConsultation from "./pages/ProjectConsultation";
-import PublicOfferingLanding from "./pages/PublicOfferingLanding";
-import ProductsCatalog from "./pages/ProductsCatalog";
-import NotFound from "./pages/NotFound";
+import DashboardRoutes from '@/pages/dashboard/index';
+import Login from '@/pages/Login';
+import Signup from '@/pages/Signup';
+import AuthCallback from '@/pages/AuthCallback';
+import Index from '@/pages/Index';
+import Solutions from '@/pages/Solutions';
+import ServiceLanding from '@/pages/ServiceLanding';
+import ProductsCatalog from '@/pages/ProductsCatalog';
+import Work from '@/pages/Work';
+import Industries from '@/pages/Industries';
+import Insights from '@/pages/Insights';
+import About from '@/pages/About';
+import FAQ from '@/pages/FAQ';
+import Contact from '@/pages/Contact';
+import ProjectConsultation from '@/pages/ProjectConsultation';
+import NotFound from '@/pages/NotFound';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const queryClient = new QueryClient();
 
@@ -72,9 +73,9 @@ const AppRoutes = () => {
       <Route path="/" element={<Index />} />
       <Route path="/solutions" element={<Solutions />} />
       <Route path="/services" element={<Navigate to="/solutions" replace />} />
-      <Route path="/services/:slug" element={<PublicOfferingLanding type="service" />} />
+      <Route path="/services/:slug" element={<ServiceLanding />} />
       <Route path="/products" element={<ProductsCatalog />} />
-      <Route path="/products/:slug" element={<PublicOfferingLanding type="product" />} />
+      <Route path="/products/:slug" element={<ServiceLanding />} />
       <Route path="/work" element={<Work />} />
       <Route path="/industries" element={<Industries />} />
       <Route path="/insights" element={<Insights />} />
@@ -136,15 +137,17 @@ const App = () => {
             v7_startTransition: true,
             v7_relativeSplatPath: true
           }}>
-          <AuthProvider>
-            <AnimatePresence mode="wait">
-              <AnimatedRoute>
-                <AppRoutes />
-              </AnimatedRoute>
-            </AnimatePresence>
-            <Toaster />
-            <Sonner />
-          </AuthProvider>
+          <ErrorBoundary>
+            <AuthProvider>
+              <AnimatePresence mode="wait">
+                <AnimatedRoute>
+                  <AppRoutes />
+                </AnimatedRoute>
+              </AnimatePresence>
+              <Toaster />
+              <Sonner />
+            </AuthProvider>
+          </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

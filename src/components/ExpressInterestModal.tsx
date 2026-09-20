@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Clock, ShieldCheck, ArrowRight, MessageSquare, Sparkles, Loader2 } from 'lucide-react';
-import { offeringService, OfferingItem } from '@/services/offeringService';
+import { useSubmitExpressInterest } from '@/hooks/useOffering';
+import type { OfferingItem } from '@/services/offeringService';
 import { useNavigate } from 'react-router-dom';
 
 interface ExpressInterestModalProps {
@@ -29,16 +30,14 @@ export const ExpressInterestModal: React.FC<ExpressInterestModalProps> = ({
   const [message, setMessage] = useState('');
   const [budget, setBudget] = useState('');
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitInterest = useSubmitExpressInterest();
   const [submittedLeadId, setSubmittedLeadId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone || !email) return;
 
-    setIsSubmitting(true);
-
-    const result = await offeringService.submitExpressInterest({
+    submitInterest.mutate({
       name,
       email,
       phone,
@@ -50,13 +49,13 @@ export const ExpressInterestModal: React.FC<ExpressInterestModalProps> = ({
       offering_name: offering.name,
       quantity: offering.type === 'product' ? quantity : undefined,
       estimatedBudget: budget || (offering.price ? `K${offering.price.toLocaleString()}` : undefined)
+    }, {
+      onSuccess: (result) => {
+        if (result.success && result.leadId) {
+          setSubmittedLeadId(result.leadId);
+        }
+      }
     });
-
-    setIsSubmitting(false);
-
-    if (result.success && result.leadId) {
-      setSubmittedLeadId(result.leadId);
-    }
   };
 
   const handleReset = () => {
@@ -224,8 +223,8 @@ export const ExpressInterestModal: React.FC<ExpressInterestModalProps> = ({
                   <Button type="button" variant="ghost" size="sm" onClick={handleReset}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto font-semibold gap-2">
-                    {isSubmitting ? (
+                  <Button type="submit" disabled={submitInterest.isPending} className="w-full sm:w-auto font-semibold gap-2">
+                    {submitInterest.isPending ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
                         Submitting...

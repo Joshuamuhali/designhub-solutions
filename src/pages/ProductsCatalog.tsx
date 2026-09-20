@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { offeringService, OfferingItem } from '@/services/offeringService';
+import { usePublishedProducts } from '@/hooks/useOffering';
+import type { OfferingItem } from '@/services/offeringService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,19 +10,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 
 export default function ProductsCatalog() {
-  const [products, setProducts] = useState<OfferingItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      const data = await offeringService.getPublishedProducts();
-      setProducts(data);
-      setLoading(false);
-    };
-
-    fetchProducts();
-  }, []);
+  const { data: products = [], isLoading, error } = usePublishedProducts();
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -42,9 +31,13 @@ export default function ProductsCatalog() {
             </p>
           </div>
 
-          {loading ? (
+          {isLoading ? (
             <div className="flex justify-center py-20">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-20">
+              <p className="text-sm text-muted-foreground">Failed to load products: {error.message}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
